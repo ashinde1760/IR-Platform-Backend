@@ -1,0 +1,49 @@
+
+
+micronaut:
+   server:
+    cors:
+      enabled: true      
+    port: 8081
+    max-request-size: '5GB'
+    multipart:
+           max-file-size: '5GB'
+    
+   http:
+    client:
+     connect-timeout: 10m
+   
+#    cors:
+#      enabled: true
+#      config:
+#        my-cors-policy:
+#          allowed-origins:"*"
+#          allowed-method:"GET,POST,PUT,DELETE,OPTIONS"
+#          allowed-headers:"Content-Type"
+      
+      
+ 
+  
+my:
+  config:
+    removeComma: true
+    removeBracket: true
+    removeSpace: true      
+    dateMatcher: true  
+
+files:
+    local:
+      base-dir: '${user.home}/MyCenter/InvestorRelation/media'
+      file-dir: '${user.home}/MyCenter/InvestorRelation/logo'
+      multipart-upload-threshold: 5368709120
+      max-uplaod-threads: 5
+      
+        
+#datasources:
+#  default:
+#    driverClassName: com.microsoft.sqlserver.jdbc.SQLServerDriver
+#    db-type: mssql
+#netty:
+#  default:
+#    allocator:
+#      max-order: 3

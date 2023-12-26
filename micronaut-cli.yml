@@ -1,0 +1,6 @@
+applicationType: default
+defaultPackage: com.Anemoi
+testFramework: junit
+sourceLanguage: java
+buildTool: maven
+features: [app-name, http-client, jackson-databind, java, java-application, jdbc-hikari, junit, logback, maven, netty-server, readme, shade, sqlserver, test-resources, yaml]

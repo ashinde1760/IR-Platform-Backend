@@ -1,0 +1,147 @@
+#JAVA Maven Pipeline 
+parameters:
+  - name: ENVVG
+    displayName: Select Environment To Deploy
+    type: string
+    default: DEV
+    values:
+    - DEV
+    #- UAT
+    #- PROD
+
+  - name: blackduck
+    displayName: Do you want to scan for BlackDuck?(Click on it)
+    type: boolean
+    default: false
+
+trigger:
+- dev
+
+variables:
+- name: build_agent_pool
+  value: windows-latest
+- name: build_content_path
+  value: "$(Build.SourcesDirectory)/target/Investor_Relation-0.1.jar"
+- name: env
+  ${{ if eq(parameters.ENVVG, 'DEV') }}:
+    value: dev
+  ${{ if eq(parameters.ENVVG, 'UAT') }}:
+    value: uat
+  ${{ if eq(parameters.ENVVG, 'PROD') }}:
+    value: prod
+
+- name: DB_HOST
+  value: $(${{ parameters.ENVVG }}_DB_HOST)
+- name: DB_USERNAME
+  value: $(${{ parameters.ENVVG }}_DB_USERNAME)
+- name: DB_PASSWORD
+  value: $(${{ parameters.ENVVG }}_DB_PASSWORD)
+- name: DB_NAME
+  value: $(${{ parameters.ENVVG }}_DB_NAME)
+# - name: FORMRECOGNIZER_KEY 
+#   value: $(${{ parameters.ENVVG }}_FORMRECOGNIZER_KEY) 
+# - name: FORMRECOGNIZER_ENDPOINT 
+#   value: $(${{ parameters.ENVVG }}_FORMRECOGNIZER_ENDPOINT)
+
+- group: investor_relations
+
+stages:
+- ${{ if eq(parameters.blackduck, false) }}:
+  - stage: BUILD
+    displayName: 'Build ${{ parameters.ENVVG }}'
+    pool: 
+      vmImage: $(build_agent_pool)
+    jobs:
+      - job: Build
+        displayName: "Build Backend"
+        workspace:
+          clean: all
+        steps:
+          - checkout: self
+
+          # Replace Variables & Tokens
+          - task: qetza.replacetokens.replacetokens-task.replacetokens@3
+            displayName: 'Replace Tokens in Manifests'
+            inputs:
+              rootDirectory: '$(Build.SourcesDirectory)/src/main/resources/'
+              targetFiles: 'db.properties, database.properties,ocrKey.properties'
+              escapeType: none
+              verbosity: detailed
+          - script: mvn clean install -DskipTests
+            displayName: 'building java app'
+
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: $(build_content_path)
+              artifactName: build_be_$(env)
+            displayName: "Publish pipeline artifact"
+
+  - stage: Deploy
+    displayName: 'Deploy ${{ parameters.ENVVG }}'
+    pool: 
+      vmImage: $(build_agent_pool)
+    jobs:
+    - deployment: investor_relations_backend
+      displayName: 'Deploy to Group'
+      workspace:
+        clean: all
+      environment: 
+        name: IR_project_vm
+        resourceType: VirtualMachine
+      strategy:
+        runOnce:
+          deploy:   
+            steps:
+              - task: DownloadPipelineArtifact@2
+                inputs:
+                  artifact: build_be_$(env)
+                  path: $(System.DefaultWorkingDirectory)/build_be_$(env)      
+              
+              - powershell: |
+                  Remove-Item -path 'C:\CICD\devBackend\*' -Recurse -Force -EA SilentlyContinue -Verbose;
+                  Copy-Item '$(System.DefaultWorkingDirectory)/build_be_$(env)/*' 'C:\CICD\devBackend' -Recurse
+
+                  # Write-Host "Starting App"
+                  # powershell.exe C:\Users\GLBL_RDP_USER_01\Documents\start-backend.ps1
+                displayName: 'Execute Deploy Script'
+              
+              # - powershell: |
+                  # Write-Host "Remove Old Jar"
+                  # Remove-Item -path 'C:\Backend\*' -Recurse -Force -EA SilentlyContinue -Verbose;
+                  
+                  # Write-Host "Copy New Latest Jar"
+                  # Copy-Item '$(System.DefaultWorkingDirectory)/_INV_RELATIONS_PLATFORM_BACKEND/build_be_uat/*' 'C:\Backend' -Recurse
+                  
+                  # Write-Host "Stop App"
+                  # Stop-Process -Name "java" -ErrorAction SilentlyContinue
+
+                  # Write-Host "Start App"
+                  # Start-Process -FilePath "java.exe" "-jar", "C:\Backend\Investor_Relation-0.1.jar"
+                # displayName: 'Execute Deploy Script'
+
+- ${{ if eq(parameters.blackduck, true) }}:
+  - stage: BlackDuck
+    displayName: 'BlackDuck ${{ parameters.ENVVG }}'
+    pool: 
+      vmImage: $(build_agent_pool)
+    jobs:
+      - job: BlackDuck
+        displayName: "BlackDuck Scan"
+        workspace:
+          clean: all
+        steps:
+          - checkout: self
+
+          - task: synopsys-detect.synopsys-detect.synopsys-detect-task.SynopsysDetectTask@8
+            displayName: 'Black Duck - Synopsys Detect for your build '
+            inputs:
+              BlackDuckService: 'black_duck'
+              DetectArguments: |
+                --detect.diagnostic=true
+                --detect.project.name="IN-Investor-Relation-Platform"
+                --detect.project.version.name="$(bd_version)"
+                --detect.project.codelocation.suffix="BE"
+                --detect.output.path="C:\Users\VssAdministrator\blackduck"
+                --detect.accuracy.required=None
+            #continueOnError: true
+              
