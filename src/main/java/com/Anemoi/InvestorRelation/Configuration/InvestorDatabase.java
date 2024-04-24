@@ -2,14 +2,21 @@ package com.Anemoi.InvestorRelation.Configuration;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.Anemoi.InvestorRelation.DataIngestion.DataIngestionQueryConstant;
+import com.Anemoi.InvestorRelation.UserModel.UserEntity;
+import com.Anemoi.InvestorRelation.UserModel.UserQueryConstant;
 
 public class InvestorDatabase extends InvestorDatabaseTables {
 
@@ -72,15 +79,13 @@ public class InvestorDatabase extends InvestorDatabaseTables {
 				statement.executeUpdate(DB_CREATE + dataBaseName);
 				logger.info("checking table are existing");
 
-				  createTable(dataBaseName);
-			
+				createTable(dataBaseName);
+
 				logger.info("** create[ " + dataBaseName + "] database successfully... **");
 			} else {
 				logger.info("** create[ " + dataBaseName + "] database already exits... **");
-				
-				  createTable(dataBaseName);
-			
 
+				createTable(dataBaseName);
 
 			}
 		} catch (Exception e) {
@@ -90,8 +95,6 @@ public class InvestorDatabase extends InvestorDatabaseTables {
 		}
 	}
 
-
-
 	private static void createTable(String dataBaseName) throws SQLException, ClassNotFoundException {
 		// TODO Auto-generated method stub
 		Connection connection = null;
@@ -100,156 +103,158 @@ public class InvestorDatabase extends InvestorDatabaseTables {
 		connection = InvestorDatabaseUtill.getConnection();
 
 		statement = connection.createStatement();
-		 DatabaseMetaData metaData = connection.getMetaData();
-         List<String> tables = Arrays.asList("rolemodel", "userTable", "balanceSheetform","incomestatement","cashflow","shareholderdataform", "shareholdercontact", "shareholdermeeting","financialRatio","analystLineItem"
-        		, "clientLineItem","analystDetails", "analystContactDetails","nonprocessFileTable", "dataIngestion","forecast","tableList", "dataIngestionaTabelMetaData","dataIngestionMappingtable", "keywordlist", "reportTableHeader","meetingshedulartable","clientcodedetails","clientDetails","whitelablingtable"
-        		,"auditHistoryTable","minorcodelistTable","notificationTable");
-        		
-         for (String tableName : tables) {
-             ResultSet rs = metaData.getTables(dataBaseName, null, tableName, null);
-             if (rs.next()) {
-                 System.out.println("Table " + tableName + " already exists, skipping creation.");
-             } else {
-                 System.out.println("Creating table " + tableName + "...");
-                 String sql = "";
-                 switch (tableName) {
-                 
-                     case "rolemodel":
-                    	 createRoleModelTable(statement,dataBaseName);
-                    	 break;
-                    	 
-                     case "userTable":
-                    	 createUserTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "balanceSheetform":
-                    	 createBalanceSheetTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "incomestatement":
-                    	 createincomestatementTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "cashflow":
-                    	 createcashflowTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "shareholderdataform":
-                    	 createshareholderdataformTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "shareholdercontact":
-                    	 createshareholdercontactTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "shareholdermeeting":
-                    	 createshareholdermeetingTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "financialRatio":
-                    	 createfinancialRatioTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "analystLineItem":
-                    	 createanalystLineItem(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "clientLineItem":
-                    	 createclientLineItem(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "analystDetails":
-                    	 createanalystDetails(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "analystContactDetails":
-                    	 createAnalystContactDetails(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "nonprocessFileTable":
-                    	 createNonprocessFilesTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "dataIngestion":
-                    	 createDataIngestion(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "forecast":
-                    	 createForcastTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "tableList":
-                    	 createTableList(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "dataIngestionaTabelMetaData":
-                    	 createDataIngestionTableMetaData(statement, dataBaseName);
-                    	 break;
-                    	 
-                    	 
-                     case "dataIngestionMappingtable":
-                    	 createDataIngestionMappingTable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "keywordlist":
-                    	 createKeywordList(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "reportTableHeader":
-                    	 createReportTableHeader(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "meetingshedulartable":
-                    	 createnewMeetingtable(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "clientcodedetails":
-                    	 createclientCodeDetails(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "clientDetails":
-                    	 createClientDetails(statement, dataBaseName);
-                    	 break;
-                    	 
-                     case "whitelablingtable":
-                    	 createWhiteLablingTable(statement,dataBaseName);
-                    	 break;
-                     case "auditHistoryTable":
-                    	 createAuditHistorytable(statement,dataBaseName);
-                    	 break;
-                     case "minorcodelistTable":
-                    	 createminorCodetable(statement,dataBaseName);
-                    	 break;
-                     case "notificationTable":
-                    	 createNotificationTable(statement,dataBaseName);
-                    	 break;	 
-                    	 
-                 }
-                    	
-                         System.out.println("Table " + tableName + " created successfully.");
-             }
-         }
+		DatabaseMetaData metaData = connection.getMetaData();
+		List<String> tables = Arrays.asList("rolemodel", "userTable", "balanceSheetform", "incomestatement", "cashflow",
+				"shareholderdataform", "shareholdercontact", "shareholdermeeting", "financialRatio", "analystLineItem",
+				"clientLineItem", "analystDetails", "analystContactDetails", "nonprocessFileTable", "dataIngestion",
+				"forecast", "tableList", "dataIngestionaTabelMetaData", "dataIngestionMappingtable", "keywordlist",
+				"reportTableHeader", "meetingshedulartable", "clientcodedetails", "clientDetails", "whitelablingtable",
+				"auditHistoryTable", "minorcodelistTable", "notificationTable", "mailDataTable");
+
+		for (String tableName : tables) {
+			ResultSet rs = metaData.getTables(dataBaseName, null, tableName, null);
+			if (rs.next()) {
+				System.out.println("Table " + tableName + " already exists, skipping creation.");
+			} else {
+				System.out.println("Creating table " + tableName + "...");
+				String sql = "";
+				switch (tableName) {
+
+				case "rolemodel":
+					createRoleModelTable(statement, dataBaseName);
+					break;
+
+				case "userTable":
+					createUserTable(statement, dataBaseName);
+					break;
+
+				case "balanceSheetform":
+					createBalanceSheetTable(statement, dataBaseName);
+					break;
+
+				case "incomestatement":
+					createincomestatementTable(statement, dataBaseName);
+					break;
+
+				case "cashflow":
+					createcashflowTable(statement, dataBaseName);
+					break;
+
+				case "shareholderdataform":
+					createshareholderdataformTable(statement, dataBaseName);
+					break;
+
+				case "shareholdercontact":
+					createshareholdercontactTable(statement, dataBaseName);
+					break;
+
+				case "shareholdermeeting":
+					createshareholdermeetingTable(statement, dataBaseName);
+					break;
+
+				case "financialRatio":
+					createfinancialRatioTable(statement, dataBaseName);
+					break;
+
+				case "analystLineItem":
+					createanalystLineItem(statement, dataBaseName);
+					break;
+
+				case "clientLineItem":
+					createclientLineItem(statement, dataBaseName);
+					break;
+
+				case "analystDetails":
+					createanalystDetails(statement, dataBaseName);
+					break;
+
+				case "analystContactDetails":
+					createAnalystContactDetails(statement, dataBaseName);
+					break;
+
+				case "nonprocessFileTable":
+					createNonprocessFilesTable(statement, dataBaseName);
+					break;
+
+				case "dataIngestion":
+					createDataIngestion(statement, dataBaseName);
+					break;
+
+				case "forecast":
+					createForcastTable(statement, dataBaseName);
+					break;
+
+				case "tableList":
+					createTableList(statement, dataBaseName);
+					break;
+
+				case "dataIngestionaTabelMetaData":
+					createDataIngestionTableMetaData(statement, dataBaseName);
+					break;
+
+				case "dataIngestionMappingtable":
+					createDataIngestionMappingTable(statement, dataBaseName);
+					break;
+
+				case "keywordlist":
+					createKeywordList(statement, dataBaseName);
+					break;
+
+				case "reportTableHeader":
+					createReportTableHeader(statement, dataBaseName);
+					break;
+
+				case "meetingshedulartable":
+					createnewMeetingtable(statement, dataBaseName);
+					break;
+
+				case "clientcodedetails":
+					createclientCodeDetails(statement, dataBaseName);
+					break;
+
+				case "clientDetails":
+					createClientDetails(statement, dataBaseName);
+					break;
+
+				case "whitelablingtable":
+					createWhiteLablingTable(statement, dataBaseName);
+					break;
+				case "auditHistoryTable":
+					createAuditHistorytable(statement, dataBaseName);
+					break;
+				case "minorcodelistTable":
+					createminorCodetable(statement, dataBaseName);
+					break;
+				case "notificationTable":
+					createNotificationTable(statement, dataBaseName);
+					break;
+				case "mailDataTable":
+					MailDataTable(statement, dataBaseName);
+					break;
+
+				}
+
+				System.out.println("Table " + tableName + " created successfully.");
+			}
+		}
 	}
-
-
-
 
 	private static void createminorCodetable(Statement statement, String dataBaseName) throws SQLException {
 		// TODO Auto-generated method stub
 		statement.executeUpdate(CREATE_MINORCODELIST_TABLE.replace(DATA_BASE_PLACE_HOLDER, dataBaseName));
 		logger.info("minor code list table  create successfully");
 	}
+
 	private static void createNotificationTable(Statement statement, String dataBaseName) throws SQLException {
 		statement.executeUpdate(CREATE_NOTIFICATION_TABLE.replace(DATA_BASE_PLACE_HOLDER, dataBaseName));
 		logger.info("notifiation  table  create successfully");
-		
-		
+
 	}
 
 	private static void createAuditHistorytable(Statement statement, String dataBaseName) throws SQLException {
 		statement.executeUpdate(CREATE_AUDITHISTORY_TABLE.replace(DATA_BASE_PLACE_HOLDER, dataBaseName));
 		logger.info("audit history table  create successfully");
-		
+
 	}
 
 	private static void createAnalystContactDetails(Statement statement, String dataBaseName) throws SQLException {
@@ -258,6 +263,7 @@ public class InvestorDatabase extends InvestorDatabaseTables {
 		logger.info("white lableling table  create successfully");
 
 	}
+
 	private static void createWhiteLablingTable(Statement statement, String dataBaseName) throws SQLException {
 		// TODO Auto-generated method stub
 		statement.executeUpdate(CREATE_WHITELABLING.replace(DATA_BASE_PLACE_HOLDER, dataBaseName));
@@ -406,9 +412,12 @@ public class InvestorDatabase extends InvestorDatabaseTables {
 		logger.info("balance sheet table create successfully");
 	}
 
-	private static void createUserTable(Statement statement, String dataBaseName) throws SQLException {
+	private static void createUserTable(Statement statement, String dataBaseName) throws SQLException, ClassNotFoundException {
 		// TODO Auto-generated method stub
+		Connection con=null;
+		PreparedStatement prepStatement=null;
 		System.out.println(statement.toString());
+		
 
 //		String query = "CREATE TABLE InvestorDB.dev.user1(id uniqueidentifier NOT NULL,firstName varchar(255) NOT NULL,lastName varchar(255) NOT NULL,email varchar(255) NOT NULL,mobileNumber varchar(255) NOT NULL,domain varchar(255) NOT NULL,assignedName varchar(255) NOT NULL,role varchar(255) NOT NULL,status varchar(255) NOT NULL,createdOn bigint NOT NULL,CONSTRAINT PK_id PRIMARY KEY CLUSTERED(id))";
 //		statement.executeUpdate(query);
@@ -417,6 +426,36 @@ public class InvestorDatabase extends InvestorDatabaseTables {
 		// statement.ex(CREATE_USER_TABLE.replace(DATA_BASE_PLACE_HOLDER,
 		// dataBaseName));
 		logger.info("user table create successfully");
+		con = InvestorDatabaseUtill.getConnection();
+
+		prepStatement = con.prepareStatement(UserQueryConstant.INSERT_INTO_USERDETAILS
+				.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+		String userId = UUID.randomUUID().toString();
+		UserEntity user=new UserEntity();
+		user.setUserid(userId);
+		String id = user.getUserid();
+//		user.setPassword(password);
+//		String password1 = user.getPassword();
+
+//		System.out.println(id+" "+user);
+		Date date = new Date();
+
+
+		prepStatement.setString(1, id);
+		prepStatement.setString(2, "Gorakh");
+		prepStatement.setString(3, "Shewale");
+		prepStatement.setString(4, "gorakh.kewal.shewale.tpr@in.pwc.com");
+		prepStatement.setString(5, "9879877");
+		prepStatement.setString(6, "Akshay");
+		prepStatement.setString(7, "Master Admin");
+		prepStatement.setString(8, "Active");
+		prepStatement.setString(9, null);
+		prepStatement.setLong(10, date.getTime());
+		prepStatement.setLong(11, date.getTime());
+		prepStatement.setString(12, "akshay.popat.shinde.tpr@in.pwc.com");
+		prepStatement.setString(13, null);
+
+		prepStatement.executeUpdate();
 	}
 
 	private static void createRoleModelTable(Statement statement, String dataBaseName) throws SQLException {
@@ -424,5 +463,11 @@ public class InvestorDatabase extends InvestorDatabaseTables {
 		System.out.println("welcome tables");
 		statement.executeUpdate(CREATE_ROLEMODEL_TABLE.replace(DATA_BASE_PLACE_HOLDER, dataBaseName));
 		logger.info("roleModel table create successfully");
+	}
+
+	private static void MailDataTable(Statement statement, String dataBaseName) throws SQLException {
+		statement.executeUpdate(CREATE_MAIL_DATA_TABLE.replace(DATA_BASE_PLACE_HOLDER, dataBaseName));
+		logger.info("notifiation  table  create successfully");
+
 	}
 }

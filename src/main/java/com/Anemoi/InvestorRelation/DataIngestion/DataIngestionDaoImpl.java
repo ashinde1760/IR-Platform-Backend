@@ -71,15 +71,11 @@ import com.Anemoi.Resource.Media;
 //import com.azure.ai.formrecognizer.models.DocumentTable;
 //import com.azure.ai.formrecognizer.models.DocumentTableCell;
 
-
-
 import com.azure.ai.formrecognizer.documentanalysis.DocumentAnalysisClient;
 
 import com.azure.ai.formrecognizer.documentanalysis.DocumentAnalysisClientBuilder;
 
 import com.azure.ai.formrecognizer.documentanalysis.models.AnalyzeResult;
-
- 
 
 import com.azure.ai.formrecognizer.documentanalysis.models.*;
 
@@ -88,7 +84,6 @@ import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.util.BinaryData;
 
 import com.azure.core.util.polling.SyncPoller;
-
 
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.data.model.query.QueryModel.In;
@@ -117,1005 +112,1087 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataIngestionDaoImpl.class);
 	HSSFWorkbook workbook = new HSSFWorkbook();
 
-	
-	@SuppressWarnings("resource")
+	@SuppressWarnings({ "resource", "unused" })
 	public DataIngestionModel extractFileByFileId(long fileId, String dataBaseName)
 			throws SQLException, IOException, ClassNotFoundException, DataIngestionDaoException {
 		DataIngestionModel model = new DataIngestionModel();
 		Connection con = InvestorDatabaseUtill.getConnection();
 		PreparedStatement statement = null;
 		ResultSet rs = null;
-		try
-		{
-		System.out.println("get file details by fileid");
-		statement = con.prepareStatement(DataIngestionQueryConstant.SELECT_DATAINGESTION_FILEDETAILS_BYFILEID
-				.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-		statement.setLong(1, fileId);
-		rs = statement.executeQuery();
-		while (rs.next()) {
-			model.setFileId(rs.getLong("fileId"));
-			model.setClient(rs.getString("client"));
-			model.setDocumentType(rs.getString("documentType"));
-			model.setAnalystName(rs.getString("analystName"));
-			model.setPeerName(rs.getString("peerName"));
-			model.setCurrency(rs.getString("currency"));
-			model.setUnits(rs.getString("units"));
-			model.setReportType(rs.getString("reportType"));
-			model.setReportDate(rs.getDate("reportDate"));
-			model.setFileName(rs.getString("fileName"));
-			model.setFileType(rs.getString("fileType"));
-			model.setFileData(rs.getBytes("fileData"));
-			model.setDenomination(rs.getString("denomination"));
-			model.setPagenumbers(rs.getString("pagenumbers"));
-			model.setStatus(rs.getString("status"));
+		try {
+			System.out.println("get file details by fileid");
+			statement = con.prepareStatement(DataIngestionQueryConstant.SELECT_DATAINGESTION_FILEDETAILS_BYFILEID
+					.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+			statement.setLong(1, fileId);
+			rs = statement.executeQuery();
+			while (rs.next()) {
+				model.setFileId(rs.getLong("fileId"));
+				model.setClient(rs.getString("client"));
+				model.setDocumentType(rs.getString("documentType"));
+				model.setAnalystName(rs.getString("analystName"));
+				model.setPeerName(rs.getString("peerName"));
+				model.setCurrency(rs.getString("currency"));
+				model.setUnits(rs.getString("units"));
+				model.setReportType(rs.getString("reportType"));
+				model.setReportDate(rs.getDate("reportDate"));
+				model.setFileName(rs.getString("fileName"));
+				model.setFileType(rs.getString("fileType"));
+				model.setFileData(rs.getBytes("fileData"));
+				model.setDenomination(rs.getString("denomination"));
+				model.setPagenumbers(rs.getString("pagenumbers"));
+				model.setStatus(rs.getString("status"));
 
-		}
-		ArrayList<DataIngestionTableModel> modellist = new ArrayList<>();
-		int datecount = 0;
+			}
+			ArrayList<DataIngestionTableModel> modellist = new ArrayList<>();
+			int datecount = 0;
 
-		XSSFRow row;
-		String extPattern = "(?<!^)[.]" + (".*");
+			XSSFRow row;
+			String extPattern = "(?<!^)[.]" + (".*");
 
 //		final String endpoint = "https://secondformrecognizer001.cognitiveservices.azure.com/";
 //		final String key = "8a2c1038c4ee4c87ace5fb24723f3396";
-		final String endpoint = ReadPropertiesFile.readOCrKey("endpoint");
-		final String key = ReadPropertiesFile.readOCrKey("key");
-		System.out.println("endpoint "+endpoint);
-		DocumentAnalysisClient client = new DocumentAnalysisClientBuilder().credential(new AzureKeyCredential(key))
-				.endpoint(endpoint).buildClient();
-		// String modelId = "54a23747-5d44-475d-a3d1-e7b18f047a90";
-		String modelId = "prebuilt-document";
-		String fileName = model.getFileName();
-		File document = new File(fileName);
-		XSSFWorkbook workbook = new XSSFWorkbook();
-		String replacedFileName = document.getName().replaceAll(extPattern, "");
-		byte[] fileContent = model.getFileData();
-		
-		
-		
-	
-		try (InputStream targetStream = new ByteArrayInputStream(fileContent)) {
-			SyncPoller<OperationResult, AnalyzeResult> analyzeDocumentPoller = client
-					.beginAnalyzeDocument(modelId, BinaryData.fromBytes(fileContent));
-			List<String> cmpvalue = new ArrayList<>();
-			List<String> target = new ArrayList<>();
-			AnalyzeResult analyzeResult = analyzeDocumentPoller.getFinalResult();
-			List<String> extractedDates = new ArrayList<>();
-			try {
-            for(int d=0;d<=1;d++)
-            {
-			// Extract lines from page number 1
-			DocumentPage pageResult = analyzeResult.getPages().get(d);
-			List<DocumentLine> lines = pageResult.getLines();
-		
-			for (DocumentLine lineResult : lines) {
-				String data = lineResult.getContent() + " ";
+			final String endpoint = ReadPropertiesFile.readOCrKey("endpoint");
+			final String key = ReadPropertiesFile.readOCrKey("key");
+			System.out.println("endpoint " + endpoint);
+			DocumentAnalysisClient client = new DocumentAnalysisClientBuilder().credential(new AzureKeyCredential(key))
+					.endpoint(endpoint).buildClient();
+			// String modelId = "54a23747-5d44-475d-a3d1-e7b18f047a90";
+			String modelId = "prebuilt-document";
+			String fileName = model.getFileName();
+			String sectionFileName = sanitizeFileName(fileName);
+			File document = new File(sectionFileName);
+			XSSFWorkbook workbook = new XSSFWorkbook();
+			String replacedFileName = document.getName().replaceAll(extPattern, "");
+			byte[] fileContent = model.getFileData();
+
+			try (InputStream targetStream = new ByteArrayInputStream(fileContent)) {
+				SyncPoller<OperationResult, AnalyzeResult> analyzeDocumentPoller = client.beginAnalyzeDocument(modelId,
+						BinaryData.fromBytes(fileContent));
+				List<String> cmpvalue = new ArrayList<>();
+				List<String> target = new ArrayList<>();
+				AnalyzeResult analyzeResult = analyzeDocumentPoller.getFinalResult();
+				List<String> extractedDates = new ArrayList<>();
+				try {
+					for (int d = 0; d <= 1; d++) {
+						// Extract lines from page number 1
+						DocumentPage pageResult = analyzeResult.getPages().get(d);
+						List<DocumentLine> lines = pageResult.getLines();
+
+						for (DocumentLine lineResult : lines) {
+							String data = lineResult.getContent() + " ";
 //        System.out.println(data);
-				Pattern datePattern = (Pattern.compile("\\b\\p{Lu}{1}[a-z]+ \\d{1,2}, \\d{4}\\b"));
-				Matcher matcher = datePattern.matcher(data);
-				if (matcher.find()) {
-					String dateStr = matcher.group();
-					DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH);
-					DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
-					DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-					LocalDate date;
-					try {
-						date = LocalDate.parse(dateStr, inputFormatter1);
-					} catch (Exception e) {
-						date = LocalDate.parse(dateStr, inputFormatter2);
-					}
+							Pattern datePattern = (Pattern.compile("\\b\\p{Lu}{1}[a-z]+ \\d{1,2}, \\d{4}\\b"));
+							Matcher matcher = datePattern.matcher(data);
+							if (matcher.find()) {
+								String dateStr = matcher.group();
+								DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("MMMM d, yyyy",
+										Locale.ENGLISH);
+								DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("MMM d, yyyy",
+										Locale.ENGLISH);
+								DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+								LocalDate date;
+								try {
+									date = LocalDate.parse(dateStr, inputFormatter1);
+								} catch (Exception e) {
+									date = LocalDate.parse(dateStr, inputFormatter2);
+								}
 
-					String newDateStr = date.format(outputFormatter);
-					extractedDates.add(newDateStr);
-				}
-				if (!matcher.find()) {
-					// date formate 1 January 2022
-					datePattern = Pattern.compile(
-							"\\b\\d{1,2}\\s+(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|JUL|August|Aug|September|Sep|October|Oct|November|Nov|December|Dec)\\s+\\d{4}\\b");
-					matcher = datePattern.matcher(data);
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						String dateString = capitalizeFirstLetter(dateStr);
-						DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.ENGLISH);
-						DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH);
-						DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-						LocalDate date;
-						try {
-							date = LocalDate.parse(dateString, inputFormatter1);
-						} catch (Exception e) {
-							date = LocalDate.parse(dateString, inputFormatter2);
-						}
+								String newDateStr = date.format(outputFormatter);
+								extractedDates.add(newDateStr);
+							}
+							if (!matcher.find()) {
+								// date formate 1 January 2022
+								datePattern = Pattern.compile(
+										"\\b\\d{1,2}\\s+(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|JUL|August|Aug|September|Sep|October|Oct|November|Nov|December|Dec)\\s+\\d{4}\\b");
+								matcher = datePattern.matcher(data);
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									String dateString = capitalizeFirstLetter(dateStr);
+									DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("d MMMM yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("d MMM yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+									LocalDate date;
+									try {
+										date = LocalDate.parse(dateString, inputFormatter1);
+									} catch (Exception e) {
+										date = LocalDate.parse(dateString, inputFormatter2);
+									}
 
-						String newDateStr = date.format(outputFormatter);
-						extractedDates.add(newDateStr);
-					}
-				}
-				if (!matcher.find()) {
-					// date formate 31st March, 2021
-					datePattern = Pattern.compile("\\d{1,2}(st|nd|rd|th|h)\\s\\w+,\\s\\d{4}");
-					matcher = datePattern.matcher(data);
+									String newDateStr = date.format(outputFormatter);
+									extractedDates.add(newDateStr);
+								}
+							}
+							if (!matcher.find()) {
+								// date formate 31st March, 2021
+								datePattern = Pattern.compile("\\d{1,2}(st|nd|rd|th|h)\\s\\w+,\\s\\d{4}");
+								matcher = datePattern.matcher(data);
 //					System.out.println("call here");
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						System.out.println("dateStr"+dateStr);
-						String dateString = dateStr;
-						System.out.println("dateString" +dateString);
-						String dateStringWithoutOrdinal = dateString.replaceAll("(st|nd|rd|th)", "");
-						DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("d MMMM, yyyy", Locale.ENGLISH);
-						DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("d MMM, yyyy", Locale.ENGLISH);
-						DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-						LocalDate date;
-						try {
-							date = LocalDate.parse(dateStringWithoutOrdinal, inputFormatter1);
-						} catch (Exception e) {
-							date = LocalDate.parse(dateStringWithoutOrdinal, inputFormatter2);
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									System.out.println("dateStr" + dateStr);
+									String dateString = dateStr;
+									System.out.println("dateString" + dateString);
+									String dateStringWithoutOrdinal = dateString.replaceAll("(st|nd|rd|th)", "");
+									DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("d MMMM, yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("d MMM, yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+									LocalDate date;
+									try {
+										date = LocalDate.parse(dateStringWithoutOrdinal, inputFormatter1);
+									} catch (Exception e) {
+										date = LocalDate.parse(dateStringWithoutOrdinal, inputFormatter2);
+									}
+
+									String newDateStr = date.format(outputFormatter);
+
+									extractedDates.add(newDateStr);
+
+								}
+							}
+							if (!matcher.find()) {
+								// date formate 31st March 2021
+								datePattern = Pattern.compile("\\d{1,2}(st|nd|rd|th|h)\\s\\w+\\s\\d{4}");
+								matcher = datePattern.matcher(data);
+
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									String dateString = dateStr;
+									System.out.println("dateString2" + dateString);
+									DateTimeFormatter inputFormatter1 = DateTimeFormatter
+											.ofPattern("dd['st']['nd']['rd']['th']['h'] MMMM yyyy", Locale.ENGLISH);
+									DateTimeFormatter inputFormatter = DateTimeFormatter
+											.ofPattern("d['st']['nd']['rd']['th']['h'] MMM yyyy", Locale.ENGLISH);
+									DateTimeFormatter inputFormatter2 = DateTimeFormatter
+											.ofPattern("dd['st']['nd']['rd']['th']['h'] MMM yyyy", Locale.ENGLISH);
+									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+									LocalDate date;
+									try {
+										date = LocalDate.parse(dateStr, inputFormatter1);
+									} catch (Exception e) {
+										try {
+											date = LocalDate.parse(dateStr, inputFormatter);
+										} catch (Exception ex) {
+											date = LocalDate.parse(dateStr, inputFormatter2);
+										}
+									}
+									String newDateStr = date.format(outputFormatter);
+
+									extractedDates.add(newDateStr);
+
+								}
+
+							}
+							if (!matcher.find()) {
+								// date formate January 1, 2022
+
+								datePattern = Pattern.compile(
+										"\\b\\d{1,2}\\s+(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sep|October|Oct|November|Nov|December|Dec),\\s+\\d{4}\\b");
+								matcher = datePattern.matcher(data);
+
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									System.out.println("datestr 4" + dateStr);
+									String dateString = dateStr;
+									DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("d MMMM',' yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("d MMM',' yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+									LocalDate date;
+									try {
+										date = LocalDate.parse(dateStr, inputFormatter1);
+									} catch (Exception e) {
+										date = LocalDate.parse(dateStr, inputFormatter2);
+									}
+
+									String newDateStr = date.format(outputFormatter);
+
+									extractedDates.add(newDateStr);
+								}
+							}
+							if (!matcher.find()) {
+								// date formate JANUARY 15, 2022
+								datePattern = Pattern.compile(
+										"\\b(?:JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\\s+[0-9]{1,2},\\s+[0-9]{4}\\b");
+								matcher = datePattern.matcher(data);
+								DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									String dateString = dateStr;
+									System.out.println("dateString" + dateString);
+									String[] dateComponents = dateString.split(" ");
+									String month = dateComponents[0];
+									int day = Integer.parseInt(dateComponents[1].replace(",", ""));
+									int year = Integer.parseInt(dateComponents[2]);
+
+									// Create a LocalDate object using the extracted components
+									LocalDate date = LocalDate.of(year, getMonthNumber(month), day);
+
+									// Format the parsed date as yyyy-MM-dd
+									String formattedDate = date.format(outputFormatter);
+
+									System.out.println("Formatted Date: " + formattedDate);
+									extractedDates.add(formattedDate);
+								}
+
+							}
+
+							if (!matcher.find()) {
+
+								// date formate 31 March, 2022
+								datePattern = Pattern.compile(
+										"\\b\\d{1,2}\\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s*,\\s*\\d{4}\\b");
+
+								matcher = datePattern.matcher(data);
+
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									System.out.println("datestr 5" + dateStr);
+									String dateString = dateStr;
+									DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd MMMM, yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+									LocalDate date = LocalDate.parse(dateStr, inputFormatter);
+									String newDateStr = date.format(outputFormatter);
+
+									extractedDates.add(newDateStr);
+								}
+							}
+
+							if (!matcher.find()) {
+								// date formate January 1 2022
+								datePattern = Pattern.compile(
+										"\\b(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sep|October|Oct|November|Nov|December|Dec)\\s+\\d{2}\\s+\\d{4}\\b");
+								matcher = datePattern.matcher(data);
+
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									String dateString = dateStr;
+									DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("MMMM dd yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("MMM dd yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+									LocalDate date;
+									try {
+										date = LocalDate.parse(dateStr, inputFormatter1);
+									} catch (Exception e) {
+										date = LocalDate.parse(dateStr, inputFormatter2);
+									}
+
+									String newDateStr = date.format(outputFormatter);
+
+									extractedDates.add(newDateStr);
+								}
+							}
+
+							if (!matcher.find()) {
+								// date formate JANUARY 15, 2022
+								datePattern = Pattern.compile(
+										"\\b(?:JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\\s+[0-9]{1,2},\\s+[0-9]{4}\\b");
+								matcher = datePattern.matcher(data);
+								DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									String dateString = dateStr;
+									System.out.println("dateString" + dateString);
+									String[] dateComponents = dateString.split(" ");
+									String month = dateComponents[0];
+									int day = Integer.parseInt(dateComponents[1].replace(",", ""));
+									int year = Integer.parseInt(dateComponents[2]);
+
+									// Create a LocalDate object using the extracted components
+									LocalDate date = LocalDate.of(year, getMonthNumber(month), day);
+
+									// Format the parsed date as yyyy-MM-dd
+									String formattedDate = date.format(outputFormatter);
+
+									System.out.println("Formatted Date: " + formattedDate);
+									extractedDates.add(formattedDate);
+								}
+
+							}
+
+							if (!matcher.find()) {
+
+								// date formate 31 March, 2022
+								datePattern = Pattern.compile(
+										"\\b\\d{1,2}\\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s*,\\s*\\d{4}\\b");
+
+								matcher = datePattern.matcher(data);
+
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									System.out.println("datestr 5" + dateStr);
+									String dateString = dateStr;
+									DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd MMMM, yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+									LocalDate date = LocalDate.parse(dateStr, inputFormatter);
+									String newDateStr = date.format(outputFormatter);
+
+									extractedDates.add(newDateStr);
+								}
+							}
+
+							if (!matcher.find()) {
+
+								// date formate 31-March-21
+								datePattern = Pattern.compile(
+										"\\b\\d{1,2}-(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sep|October|Oct|November|Nov|December|Dec)-\\d{2}\\b");
+								matcher = datePattern.matcher(data);
+
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									System.out.println("datestr 5" + dateStr);
+									String dateString = dateStr;
+									DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("dd-MMMM-YY",
+											Locale.ENGLISH);
+									DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("dd-MMM-YY",
+											Locale.ENGLISH);
+									DateTimeFormatter inputFormatter3 = DateTimeFormatter.ofPattern("dd-MMM-yy",
+											Locale.ENGLISH);
+									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+									LocalDate date = null;
+									try {
+										date = LocalDate.parse(dateStr, inputFormatter1);
+									} catch (Exception e1) {
+										try {
+											date = LocalDate.parse(dateStr, inputFormatter2);
+										} catch (Exception e2) {
+											try {
+												date = LocalDate.parse(dateStr, inputFormatter3);
+											} catch (Exception e3) {
+												// Handle parsing failure
+											}
+										}
+									}
+
+									String newDateStr = date.format(outputFormatter);
+									extractedDates.add(newDateStr);
+								}
+							}
+							if (!matcher.find()) {
+
+								// date formate 31-March-2020
+								datePattern = Pattern.compile(
+										"\\b\\d{1,2}-(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sep|October|Oct|November|Nov|December|Dec)-\\d{4}\\b");
+								matcher = datePattern.matcher(data);
+
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									System.out.println("datestr 5" + dateStr);
+									String dateString = dateStr;
+									DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("dd-MMMM-yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("dd-MMM-yyyy",
+											Locale.ENGLISH);
+									DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+									LocalDate date;
+									try {
+										date = LocalDate.parse(dateStr, inputFormatter1);
+									} catch (Exception e) {
+										date = LocalDate.parse(dateStr, inputFormatter2);
+									}
+
+									String newDateStr = date.format(outputFormatter);
+
+									extractedDates.add(newDateStr);
+								}
+							}
+
+							if (!matcher.find()) {
+								// date formate 31.03.2022
+
+								datePattern = Pattern.compile("\\b\\d{1,2}\\.\\d{1,2}\\.\\d{4}\\b");
+								matcher = datePattern.matcher(data);
+
+								if (matcher.find()) {
+									String dateStr = matcher.group();
+									System.out.println("datestr 6" + dateStr);
+									String dateString = dateStr;
+									DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+									LocalDate date = LocalDate.parse(dateString, formatter);
+									DateTimeFormatter newFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+									String newDateStr = date.format(newFormatter);
+									extractedDates.add(newDateStr);
+								}
+
+							}
+
+							else {
+								System.out.println("date not found...!!");
+
+							}
+
 						}
-
-						String newDateStr = date.format(outputFormatter);
-
-						extractedDates.add(newDateStr);
-
 					}
+				} catch (Exception e) {
+					System.out.println("page not found");
 				}
-				if (!matcher.find()) {
-					// date formate 31st March 2021
-					datePattern = Pattern.compile("\\d{1,2}(st|nd|rd|th|h)\\s\\w+\\s\\d{4}");
-					matcher = datePattern.matcher(data);
+				boolean dateMatcher = context.get("my.config.dateMatcher", Boolean.class).orElse(false);
+				if (dateMatcher) {
+					System.out.println("extractedDates: " + extractedDates);
+					String dateStr1 = model.getReportDate().toString();
 
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						String dateString = dateStr;
-						System.out.println("dateString2"+dateString );
-						DateTimeFormatter inputFormatter1 = DateTimeFormatter
-								.ofPattern("dd['st']['nd']['rd']['th']['h'] MMMM yyyy", Locale.ENGLISH);
-						DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("d['st']['nd']['rd']['th']['h'] MMM yyyy", Locale.ENGLISH);
-						DateTimeFormatter inputFormatter2 = DateTimeFormatter
-								.ofPattern("dd['st']['nd']['rd']['th']['h'] MMM yyyy", Locale.ENGLISH);
-						DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-						LocalDate date;
-						try {
-						    date = LocalDate.parse(dateStr, inputFormatter1);
-						} catch (Exception e) {
-						    try {
-						    	 date = LocalDate.parse(dateStr, inputFormatter);
-						    } catch (Exception ex) {
-						        date = LocalDate.parse(dateStr, inputFormatter2);
-						    }
+					System.out.println("income date" + dateStr1);
+
+					if (extractedDates.contains(dateStr1)) {
+						datecount++;
+					}
+
+				} else if (!dateMatcher) {
+					datecount = 1;
+				}
+
+				if (datecount > 0) {
+					System.out.println("datecount>0" + datecount);
+
+					// ************************************
+
+					////// this is pwc get cmp target and rating this code comment in anemoi
+
+					AzureKeyCredential credential = new AzureKeyCredential(key);
+
+					DocumentAnalysisClient documentAnalysisClient = new DocumentAnalysisClientBuilder()
+							.credential(credential)
+
+							.endpoint(endpoint).buildClient();
+
+					String modelId_CM = "Model_v2.0";
+
+					System.out.println("file name:" + model.getFileName());
+
+					byte[] fileContent_CM = model.getFileData();
+
+					InputStream targetStream_CM = new ByteArrayInputStream(fileContent);
+
+					SyncPoller<OperationResult, AnalyzeResult> analyzeLayoutResultPoller = documentAnalysisClient
+
+							.beginAnalyzeDocument(modelId_CM, BinaryData.fromBytes(fileContent));
+
+					AnalyzeResult analyzeLayoutResult = analyzeLayoutResultPoller.getFinalResult();
+					AtomicReference<String> ratingValue = new AtomicReference<>(null);
+
+					String cmp = null;
+					String targetPrice = null;
+					String rating = null;
+
+					for (int i = 0; i < analyzeLayoutResult.getDocuments().size(); i++) {
+						final AnalyzedDocument analyzedDocument = analyzeLayoutResult.getDocuments().get(i);
+
+						if (analyzedDocument.getFields().containsKey("CMP")) {
+							cmp = analyzedDocument.getFields().get("CMP").getContent();
+
 						}
-						String newDateStr = date.format(outputFormatter);
+						if (analyzedDocument.getFields().containsKey("Target Price")) {
+							targetPrice = analyzedDocument.getFields().get("Target Price").getContent();
 
-						extractedDates.add(newDateStr);
-
-					}
-
-				}
-				if (!matcher.find()) {
-					// date formate January 1, 2022
-
-					datePattern = Pattern.compile(
-							"\\b\\d{1,2}\\s+(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sep|October|Oct|November|Nov|December|Dec),\\s+\\d{4}\\b");
-					matcher = datePattern.matcher(data);
-
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						System.out.println("datestr 4" + dateStr);
-						String dateString = dateStr;
-						DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("d MMMM',' yyyy",
-								Locale.ENGLISH);
-						DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("d MMM',' yyyy",
-								Locale.ENGLISH);
-						DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-						LocalDate date;
-						try {
-							date = LocalDate.parse(dateStr, inputFormatter1);
-						} catch (Exception e) {
-							date = LocalDate.parse(dateStr, inputFormatter2);
 						}
+						if (analyzedDocument.getFields().containsKey("Rating")) {
+							rating = analyzedDocument.getFields().get("Rating").getContent();
 
-						String newDateStr = date.format(outputFormatter);
-
-						extractedDates.add(newDateStr);
-					}
-				}
-				if (!matcher.find()) {
-					// date formate JANUARY 15, 2022
-					datePattern = Pattern.compile("\\b(?:JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\\s+[0-9]{1,2},\\s+[0-9]{4}\\b");
-					matcher = datePattern.matcher(data);
-			        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						String dateString = dateStr;
-						System.out.println("dateString"+dateString);
-						String[] dateComponents = dateString.split(" ");
-			            String month = dateComponents[0];
-			            int day = Integer.parseInt(dateComponents[1].replace(",", ""));
-			            int year = Integer.parseInt(dateComponents[2]);
-
-			            // Create a LocalDate object using the extracted components
-			            LocalDate date = LocalDate.of(year, getMonthNumber(month), day);
-
-			            // Format the parsed date as yyyy-MM-dd
-			            String formattedDate = date.format(outputFormatter);
-
-			            System.out.println("Formatted Date: " + formattedDate);
-					            extractedDates.add(formattedDate);
-					        } 
-
-					}
-				
-				if (!matcher.find()) {
-
-					// date formate 31 March, 2022
-					datePattern = Pattern.compile(
-							"\\b\\d{1,2}\\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s*,\\s*\\d{4}\\b");
-			
-					matcher = datePattern.matcher(data);
-
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						System.out.println("datestr 5" + dateStr);
-						String dateString = dateStr;
-			            DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd MMMM, yyyy", Locale.ENGLISH);
-						DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-						LocalDate date = LocalDate.parse(dateStr, inputFormatter);
-						String newDateStr = date.format(outputFormatter);
-
-						extractedDates.add(newDateStr);
-					}
-				}
-
-				if (!matcher.find()) {
-					// date formate January 1 2022
-					datePattern = Pattern.compile(
-							"\\b(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sep|October|Oct|November|Nov|December|Dec)\\s+\\d{2}\\s+\\d{4}\\b");
-					matcher = datePattern.matcher(data);
-
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						String dateString = dateStr;
-						DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("MMMM dd yyyy", Locale.ENGLISH);
-						DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("MMM dd yyyy", Locale.ENGLISH);
-						DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-						LocalDate date;
-						try {
-							date = LocalDate.parse(dateStr, inputFormatter1);
-						} catch (Exception e) {
-							date = LocalDate.parse(dateStr, inputFormatter2);
 						}
-
-						String newDateStr = date.format(outputFormatter);
-
-						extractedDates.add(newDateStr);
 					}
-				}
-		
-				if (!matcher.find()) {
-					// date formate JANUARY 15, 2022
-					datePattern = Pattern.compile("\\b(?:JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\\s+[0-9]{1,2},\\s+[0-9]{4}\\b");
-					matcher = datePattern.matcher(data);
-			        DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						String dateString = dateStr;
-						System.out.println("dateString"+dateString);
-						String[] dateComponents = dateString.split(" ");
-			            String month = dateComponents[0];
-			            int day = Integer.parseInt(dateComponents[1].replace(",", ""));
-			            int year = Integer.parseInt(dateComponents[2]);
+					// Define a regex pattern to match numeric values
+					Pattern pattern_cr = Pattern.compile("\\d+(?:[,.]\\d+)*");
+					String numericValueCmp = null;
+					String numericValueTargetPrice = null;
 
-			            // Create a LocalDate object using the extracted components
-			            LocalDate date = LocalDate.of(year, getMonthNumber(month), day);
+					if (cmp != null) {
+						// Create a Matcher object
+						Matcher matcher = pattern_cr.matcher(cmp);
 
-			            // Format the parsed date as yyyy-MM-dd
-			            String formattedDate = date.format(outputFormatter);
-
-			            System.out.println("Formatted Date: " + formattedDate);
-					            extractedDates.add(formattedDate);
-					        } 
-
-					}
-				
-				if (!matcher.find()) {
-
-					// date formate 31 March, 2022
-					datePattern = Pattern.compile(
-							"\\b\\d{1,2}\\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\\s*,\\s*\\d{4}\\b");
-			
-					matcher = datePattern.matcher(data);
-
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						System.out.println("datestr 5" + dateStr);
-						String dateString = dateStr;
-			            DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("dd MMMM, yyyy", Locale.ENGLISH);
-						DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-						LocalDate date = LocalDate.parse(dateStr, inputFormatter);
-						String newDateStr = date.format(outputFormatter);
-
-						extractedDates.add(newDateStr);
-					}
-				}
-
-				if (!matcher.find()) {
-
-					// date formate 31-March-21
-					datePattern = Pattern.compile(
-							"\\b\\d{1,2}-(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sep|October|Oct|November|Nov|December|Dec)-\\d{2}\\b");
-					matcher = datePattern.matcher(data);
-
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						System.out.println("datestr 5" + dateStr);
-						String dateString = dateStr;
-						DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("dd-MMMM-YY", Locale.ENGLISH);
-						DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("dd-MMM-YY", Locale.ENGLISH);
-						DateTimeFormatter inputFormatter3 = DateTimeFormatter.ofPattern("dd-MMM-yy", Locale.ENGLISH);
-						DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-						 LocalDate date = null;
-						    try {
-						        date = LocalDate.parse(dateStr, inputFormatter1);
-						    } catch (Exception e1) {
-						        try {
-						            date = LocalDate.parse(dateStr, inputFormatter2);
-						        } catch (Exception e2) {
-						            try {
-						                date = LocalDate.parse(dateStr, inputFormatter3);
-						            } catch (Exception e3) {
-						                // Handle parsing failure
-						            }
-						        }
-						    }
-
-						        String newDateStr = date.format(outputFormatter);
-						        extractedDates.add(newDateStr);
-					}
-				}
-				if (!matcher.find()) {
-
-					// date formate 31-March-2020
-					datePattern = Pattern.compile(
-							"\\b\\d{1,2}-(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sep|October|Oct|November|Nov|December|Dec)-\\d{4}\\b");
-					matcher = datePattern.matcher(data);
-
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						System.out.println("datestr 5" + dateStr);
-						String dateString = dateStr;
-						DateTimeFormatter inputFormatter1 = DateTimeFormatter.ofPattern("dd-MMMM-yyyy", Locale.ENGLISH);
-						DateTimeFormatter inputFormatter2 = DateTimeFormatter.ofPattern("dd-MMM-yyyy", Locale.ENGLISH);
-						DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-						LocalDate date;
-						try {
-							date = LocalDate.parse(dateStr, inputFormatter1);
-						} catch (Exception e) {
-							date = LocalDate.parse(dateStr, inputFormatter2);
+						// Find and print the numeric value(s)
+						while (matcher.find()) {
+							numericValueCmp = matcher.group();
 						}
-
-						String newDateStr = date.format(outputFormatter);
-
-						extractedDates.add(newDateStr);
-					}
-				}
-
-				if (!matcher.find()) {
-					// date formate 31.03.2022
-
-					datePattern = Pattern.compile("\\b\\d{1,2}\\.\\d{1,2}\\.\\d{4}\\b");
-					matcher = datePattern.matcher(data);
-
-					if (matcher.find()) {
-						String dateStr = matcher.group();
-						System.out.println("datestr 6" + dateStr);
-						String dateString = dateStr;
-						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-						LocalDate date = LocalDate.parse(dateString, formatter);
-						DateTimeFormatter newFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-						String newDateStr = date.format(newFormatter);
-						extractedDates.add(newDateStr);
 					}
 
-				}
-			
-				else {
-					System.out.println("date not found...!!");
+					if (targetPrice != null) {
+						// Create a Matcher object
+						Matcher matcher1 = pattern_cr.matcher(targetPrice);
 
-				}
+						// Find and print the numeric value(s)
+						while (matcher1.find()) {
+							numericValueTargetPrice = matcher1.group();
+						}
+					}
 
-			}
-            }
-            }catch (Exception e) {
-            	System.out.println("page not found");
-			}
-			boolean dateMatcher = context.get("my.config.dateMatcher", Boolean.class).orElse(false);
-			if (dateMatcher) {
-				System.out.println("extractedDates: " + extractedDates);
-				String dateStr1 = model.getReportDate().toString();
+					System.out.println("Rating:" + rating);
+					System.out.println("CMP:" + numericValueCmp);
+					System.out.println("Target Price:" + numericValueTargetPrice);
 
-				System.out.println("income date" + dateStr1);
+					/// **********************
 
-				if (extractedDates.contains(dateStr1)) {
-					datecount++;
-				}
-
-			} else if (!dateMatcher) {
-				datecount = 1;
-			}
-
-			if (datecount > 0) {
-				System.out.println("datecount>0" + datecount);
-		
-				//************************************
-				
-				//////this is pwc get cmp target and rating this code comment in anemoi
-
-				
-				AzureKeyCredential credential = new AzureKeyCredential(key);
-
-				DocumentAnalysisClient documentAnalysisClient = new DocumentAnalysisClientBuilder().credential(credential)
-
-				.endpoint(endpoint).buildClient();
-
-				
-				String modelId_CM = "DRCT-2";
-
-				System.out.println("file name:" + model.getFileName());
-
-				byte[] fileContent_CM = model.getFileData();
-
-				InputStream targetStream_CM = new ByteArrayInputStream(fileContent);
-
-				SyncPoller<OperationResult, AnalyzeResult> analyzeLayoutResultPoller = documentAnalysisClient
-
-				.beginAnalyzeDocument(modelId_CM,BinaryData.fromBytes(fileContent));
-
-				AnalyzeResult analyzeLayoutResult = analyzeLayoutResultPoller.getFinalResult();
-				AtomicReference<String> ratingValue = new AtomicReference<>(null);
-
-				String cmp = null;
-				String targetPrice = null;
-				String rating = null;
-             
-				for (int i = 0; i < analyzeLayoutResult.getDocuments().size(); i++) {
-				    final AnalyzedDocument analyzedDocument = analyzeLayoutResult.getDocuments().get(i);
-				
-				    if (analyzedDocument.getFields().containsKey("CMP")) {
-				        cmp = analyzedDocument.getFields().get("CMP").getContent();
-				       
-				    }
-				    if (analyzedDocument.getFields().containsKey("Target Price")) {
-				        targetPrice = analyzedDocument.getFields().get("Target Price").getContent();
-				 
-				    }
-				    if (analyzedDocument.getFields().containsKey("Rating")) {
-				        rating = analyzedDocument.getFields().get("Rating").getContent();
-				  
-				    }
-				}
-
-				// Define a regex pattern to match numeric values
-				Pattern pattern_cr = Pattern.compile("\\d+(?:[,.]\\d+)*");
-				String numericValueCmp = null;
-				String numericValueTargetPrice = null;
-
-				if (cmp != null) {
-				    // Create a Matcher object
-				    Matcher matcher = pattern_cr.matcher(cmp);
-
-				    // Find and print the numeric value(s)
-				    while (matcher.find()) {
-				        numericValueCmp = matcher.group();
-				    }
-				}
-
-				if (targetPrice != null) {
-				    // Create a Matcher object
-				    Matcher matcher1 = pattern_cr.matcher(targetPrice);
-
-				    // Find and print the numeric value(s)
-				    while (matcher1.find()) {
-				        numericValueTargetPrice = matcher1.group();
-				    }
-				}
-
-				System.out.println("Rating:" + rating);
-				System.out.println("CMP:" + numericValueCmp);
-				System.out.println("Target Price:" + numericValueTargetPrice);
-              
-				
-				
-				///**********************
-				
-				String date = model.getReportDate().toString();
-				statement = con.prepareStatement(DataIngestionQueryConstant.INSERT_FORCASTTABLE
-						.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+					String date = model.getReportDate().toString();
+					statement = con.prepareStatement(DataIngestionQueryConstant.INSERT_FORCASTTABLE
+							.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
 //				statement.setLong(1, fileId);
 //				statement.setString(2, null);
 //				statement.setString(3, null);
 //				statement.setString(4, date);
 //				statement.setString(5, null);
-				//remove comment in pwc
-				statement.setLong(1, fileId);
-				statement.setString(2, numericValueCmp);
-				statement.setString(3, numericValueTargetPrice);
-				statement.setString(4, date);
-				statement.setString(5, rating);
-				statement.executeUpdate();
-				CMP_Value = null;
-				int incomeSheetCount = 1;
-				int balanceSheetCount = 1;
-				int cashFlowCount = 1;
-				int sheetcount = 1;
-
-				List<DocumentTable> tables = analyzeResult.getTables();
-				for (int i = 0; i < tables.size(); i++) {
-
-					DocumentTable documentTable = tables.get(i);
-
-					System.out.printf("Table %d has %d rows and %d columns.%n", i, documentTable.getRowCount(),
-							documentTable.getColumnCount());
-
-					XSSFSheet spreadsheet = workbook.createSheet("sheet");
-					XSSFRow newrow = spreadsheet.createRow(0);
-
-					int count = 0;
-					int col = 0;
-
-					ArrayList<WeightedWord> keyWords = fetchWeighteWords();
-
-					for (DocumentTableCell documentTableCell : documentTable.getCells()) {
-						int rowIndex = documentTableCell.getRowIndex();
-
-						if (count < rowIndex) {
-							count++;
-							System.out.println(count);
-							newrow = spreadsheet.createRow(count);
-							col = 0;
-						}
-
-						XSSFCell newcell1 = newrow.createCell(col++);
-						String keywordContain = documentTableCell.getContent().toString();
-
-						if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("101"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("102"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("103"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("104"))) {
-							workbook.setSheetName(i, ReadPropertiesFile.readKeywordProperties("100"));
-
-						}
-
-						else if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("201"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("202"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("203"))) {
-
-							workbook.setSheetName(i, ReadPropertiesFile.readKeywordProperties("200"));
-						}
-
-						else if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("301"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("302"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("303"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("304"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("305"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("306"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("307"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("308"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("309"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("310"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("311"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("312"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("313"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("314"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("315"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("316"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("317"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("318"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("319"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("320"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("321"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("322"))
-								|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("323"))) {
-
-							workbook.setSheetName(i, ReadPropertiesFile.readKeywordProperties("300"));
-
-						}
-
-						newcell1.setCellValue(documentTableCell.getContent().toString());
-
+					// remove comment in pwc
+					statement.setLong(1, fileId);
+					statement.setString(2, numericValueCmp);
+					statement.setString(3, numericValueTargetPrice);
+					statement.setString(4, date);
+					if(rating.toUpperCase().contains("BUY"))
+					{
+					statement.setString(5, "BUY");
 					}
-
-					for (int c = 0; c < sheetcount; c++) {
-						if (workbook.getSheetName(i)
-								.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("100"))) {
-
-							workbook.setSheetName(i,
-									ReadPropertiesFile.readKeywordProperties("100") + " " + incomeSheetCount++);
-
-						}
-						if (workbook.getSheetName(i)
-								.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("200"))) {
-
-							workbook.setSheetName(i,
-									ReadPropertiesFile.readKeywordProperties("200") + " " + balanceSheetCount++);
-
-						}
-						if (workbook.getSheetName(i)
-								.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("300"))) {
-
-							workbook.setSheetName(i,
-									ReadPropertiesFile.readKeywordProperties("300") + " " + cashFlowCount++);
-
-						}
-						if (workbook.getSheetName(i).equalsIgnoreCase("sheet")) {
-
-							workbook.setSheetName(i, "sheet " + sheetcount++);
-
+					else if(rating.toUpperCase().contains("OUTPERFORM"))
+					{
+						statement.setString(5, "OUTPERFORM");
+					}
+					else if(rating.toUpperCase().contains("ADD"))
+					{
+						statement.setString(5, "ADD");
+					}
+					else if(rating.toUpperCase().contains("HOLD"))
+					{
+						statement.setString(5, "HOLD");
+					}
+					else if(rating.toUpperCase().contains("NEUTRAL"))
+					{
+						statement.setString(5, "NEUTRAL");
+					}
+					else if(rating.toUpperCase().contains("REDUCE"))
+					{
+						statement.setString(5, "REDUCE");
+					}
+					else if(rating.toUpperCase().contains("SELL"))
+					{
+						statement.setString(5, "SELL");
+					}
+					else if(rating.toUpperCase().contains("UNDERPERFORM"))
+					{
+						statement.setString(5, "UNDERPERFORM");
+					}
+					else if(rating.toUpperCase().contains("NR"))
+					{
+						statement.setString(5, "NR");
+					}
+					else if(rating.toUpperCase().contains("RESTRICTED"))
+					{
+						statement.setString(5, "RESTRICTED");
+					}
+					else if(rating.toUpperCase().contains("ACCUMULATE"))
+					{
+						statement.setString(5, "ACCUMULATE");
+					}
+					else if(rating.toUpperCase().contains("LONG"))
+					{
+						statement.setString(5, "LONG");
+					}
+					else
+					{
+						if(rating==null)
+						{
+							statement.setString(5, rating);
+						}else
+						{
+						statement.setString(5, rating.toUpperCase());
 						}
 					}
+					statement.executeUpdate();
+					CMP_Value = null;
+					int incomeSheetCount = 1;
+					int balanceSheetCount = 1;
+					int cashFlowCount = 1;
+					int sheetcount = 1;
+
+					List<DocumentTable> tables = analyzeResult.getTables();
+					for (int i = 0; i < tables.size(); i++) {
+
+						DocumentTable documentTable = tables.get(i);
+
+						System.out.printf("Table %d has %d rows and %d columns.%n", i, documentTable.getRowCount(),
+								documentTable.getColumnCount());
+
+						XSSFSheet spreadsheet = workbook.createSheet("sheet");
+						XSSFRow newrow = spreadsheet.createRow(0);
+
+						int count = 0;
+						int col = 0;
+
+						ArrayList<WeightedWord> keyWords = fetchWeighteWords();
+
+						for (DocumentTableCell documentTableCell : documentTable.getCells()) {
+							int rowIndex = documentTableCell.getRowIndex();
+
+							if (count < rowIndex) {
+								count++;
+								System.out.println(count);
+								newrow = spreadsheet.createRow(count);
+								col = 0;
+							}
+
+							XSSFCell newcell1 = newrow.createCell(col++);
+							String keywordContain = documentTableCell.getContent().toString();
+
+							if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("101"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("102"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("103"))
+									|| keywordContain
+											.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("104"))) {
+								workbook.setSheetName(i, ReadPropertiesFile.readKeywordProperties("100"));
+
+							}
+
+							else if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("201"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("202"))
+									|| keywordContain
+											.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("203"))) {
+
+								workbook.setSheetName(i, ReadPropertiesFile.readKeywordProperties("200"));
+							}
+
+							else if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("301"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("302"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("303"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("304"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("305"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("306"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("307"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("308"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("309"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("310"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("311"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("312"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("313"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("314"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("315"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("316"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("317"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("318"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("319"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("320"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("321"))
+									|| keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("322"))
+									|| keywordContain
+											.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("323"))) {
+
+								workbook.setSheetName(i, ReadPropertiesFile.readKeywordProperties("300"));
+
+							}
+
+							newcell1.setCellValue(documentTableCell.getContent().toString());
+
+						}
+
+						for (int c = 0; c < sheetcount; c++) {
+							if (workbook.getSheetName(i)
+									.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("100"))) {
+
+								workbook.setSheetName(i,
+										ReadPropertiesFile.readKeywordProperties("100") + " " + incomeSheetCount++);
+
+							}
+							if (workbook.getSheetName(i)
+									.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("200"))) {
+
+								workbook.setSheetName(i,
+										ReadPropertiesFile.readKeywordProperties("200") + " " + balanceSheetCount++);
+
+							}
+							if (workbook.getSheetName(i)
+									.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("300"))) {
+
+								workbook.setSheetName(i,
+										ReadPropertiesFile.readKeywordProperties("300") + " " + cashFlowCount++);
+
+							}
+							if (workbook.getSheetName(i).equalsIgnoreCase("sheet")) {
+
+								workbook.setSheetName(i, "sheet " + sheetcount++);
+
+							}
+						}
 //				System.out.println("=======================Created a new sheet===========================");
-				}
+					}
 //			System.out.printf("Successfully created %d sheets", tables.size());
-				TableList tablelist = new TableList();
-				statement = con.prepareStatement(DataIngestionQueryConstant.SELECT_MAX_TABLEID
-						.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-				rs = statement.executeQuery();
+					TableList tablelist = new TableList();
+					statement = con.prepareStatement(DataIngestionQueryConstant.SELECT_MAX_TABLEID
+							.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+					rs = statement.executeQuery();
 
-				while (rs.next()) {
+					while (rs.next()) {
 
-					long newtableId = rs.getLong(1);
+						long newtableId = rs.getLong(1);
 
-					for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
-						XSSFSheet sheet = workbook.getSheetAt(i);
+						for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+							XSSFSheet sheet = workbook.getSheetAt(i);
 
-						int keywordcount = 0;
-						long score = 0;
-						for (Row row1 : sheet) {
-							for (Cell cell : row1) {
+							int keywordcount = 0;
+							long score = 0;
+							for (Row row1 : sheet) {
+								for (Cell cell : row1) {
 
-								if (cell.getStringCellValue().isEmpty()) {
-									cell.setCellValue("NA");
+									if (cell.getStringCellValue().isEmpty()) {
+										cell.setCellValue("NA");
+									}
+
+									String keywordContain = cell.getStringCellValue();
+
+									if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("101"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("102"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("103"))
+											|| keywordContain.equalsIgnoreCase(
+													ReadPropertiesFile.readKeywordProperties("104"))) {
+										keywordcount++;
+										if (keywordcount <= 4) {
+											score = (keywordcount * 100 / 4);
+										}
+										if (keywordcount > 4) {
+											score = 100;
+										}
+									}
+									if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("201"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("202"))
+											|| keywordContain.equalsIgnoreCase(
+													ReadPropertiesFile.readKeywordProperties("203"))) {
+										keywordcount++;
+										if (keywordcount <= 3) {
+											score = (keywordcount * 100 / 3);
+										}
+										if (keywordcount > 3) {
+											score = 100;
+										}
+									}
+									if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("301"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("302"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("303"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("304"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("305"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("306"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("307"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("308"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("309"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("310"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("311"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("312"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("313"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("314"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("315"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("316"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("317"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("318"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("319"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("320"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("321"))
+											|| keywordContain
+													.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("322"))
+											|| keywordContain.equalsIgnoreCase(
+													ReadPropertiesFile.readKeywordProperties("323"))) {
+										keywordcount++;
+										if (keywordcount <= 23) {
+											score = (keywordcount * 100 / 23);
+										}
+										if (keywordcount < 23) {
+											score = 100;
+										}
+
+									}
+
 								}
-
-								String keywordContain = cell.getStringCellValue();
-
-								if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("101"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("102"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("103"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("104"))) {
-									keywordcount++;
-									if (keywordcount <= 4) {
-										score = (keywordcount * 100 / 4);
-									}
-									if (keywordcount > 4) {
-										score = 100;
-									}
-								}
-								if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("201"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("202"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("203"))) {
-									keywordcount++;
-									if (keywordcount <= 3) {
-										score = (keywordcount * 100 / 3);
-									}
-									if (keywordcount > 3) {
-										score = 100;
-									}
-								}
-								if (keywordContain.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("301"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("302"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("303"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("304"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("305"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("306"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("307"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("308"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("309"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("310"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("311"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("312"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("313"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("314"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("315"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("316"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("317"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("318"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("319"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("320"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("321"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("322"))
-										|| keywordContain
-												.equalsIgnoreCase(ReadPropertiesFile.readKeywordProperties("323"))) {
-									keywordcount++;
-									if (keywordcount <= 23) {
-										score = (keywordcount * 100 / 23);
-									}
-									if (keywordcount < 23) {
-										score = 100;
-									}
-
-								}
-
 							}
-						}
 
-						tablelist.setTableId(newtableId + 1);
+							tablelist.setTableId(newtableId + 1);
 //				long fileId=dataIngestion.getFileId();
-						String Table_name = workbook.getSheetName(i);
-						String tablemapName = null;
+							String Table_name = workbook.getSheetName(i);
+							String tablemapName = null;
 
-						statement = con.prepareStatement(DataIngestionQueryConstant.INSERT_TABLELIST
-								.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-						statement.setLong(1, fileId);
-						statement.setLong(2, tablelist.getTableId());
-						statement.setString(3, Table_name);
-						statement.setLong(4, score);
-						statement.setString(5, tablemapName);
-						statement.executeUpdate();
-
-						DataFormatter formatter = new DataFormatter();
-
-						for (Row row1 : sheet) {
-							for (Cell cell : row1) {
-
-								if (cell.getStringCellValue().isEmpty()) {
-									cell.setCellValue("NA");
-								}
-
-								boolean removeComma = context.get("my.config.removeComma", Boolean.class).orElse(false);
-								boolean removeBracket = context.get("my.config.removeBracket", Boolean.class)
-										.orElse(false);
-								boolean removeSpace = context.get("my.config.removeSpace", Boolean.class).orElse(false);
-							
-								String cellValue = formatter.formatCellValue(cell);
-								Pattern regex = Pattern.compile( "\\d+(\\.\\d+)?,\\s\\d+(\\.\\d+)");
-
-								Pattern regex1 = Pattern.compile("\\(\\d+\\s+\\d+\\.\\d+\\)");
-
-								Pattern regex2 = Pattern.compile("-?\\d+(,\\d+)*([,]\\d+)?([,]\\d+)*");
-
-								Pattern regex3 = Pattern.compile("^\\([\\d,.\\s]+\\)$");
-
-								Pattern regex4 = Pattern.compile("\\(\\d{1,4}\\.\\d{1,2}%\\)");
-
-								Pattern regex5 = Pattern.compile("\\s\\(d\\)\\s");
-
-								Pattern regex6 = Pattern.compile("\\(?[\\d,]+(\\.\\d+)?\\)?");
-
-								Matcher match = regex.matcher(cellValue);
-
-								Matcher match1 = regex1.matcher(cellValue);
-
-								Matcher match2 = regex2.matcher(cellValue);
-
-								Matcher match3 = regex3.matcher(cellValue);
-
-								Matcher match4 = regex4.matcher(cellValue);
-
-								Matcher match5 = regex5.matcher(cellValue);
-
-								Matcher match6 = regex6.matcher(cellValue);
-
-								if (match.matches() || match1.matches() || match2.matches() || match3.matches()
-										|| match4.matches() || match5.matches() || match6.matches()) {
-
-									if (removeComma) {
-
-										cellValue = cellValue.replace(",", "");
-									}
-
-									cell.setCellValue(cellValue);
-
-									if (removeBracket) {
-										cellValue = cellValue.replace("(", "-").replace(")", "");
-									}
-
-									cell.setCellValue(cellValue);
-
-								}
-							String	pattern = "\\d+(\\.\\d+)?\\s+\\d+(\\.\\d+)?"; // regular expression for digit
-
-								regex = Pattern.compile(pattern);
-
-								match = regex.matcher(cellValue);
-
-								if (match.find()) {
-									if (removeSpace) {
-										cellValue = cellValue.replace(" ", "");
-									}
-									cell.setCellValue(cellValue);
-								}
-
-								for (int c = 0; c < 2; c++)
-
-								{
-
-									cell = row1.getCell(c);
-
-									if (cell != null) {
-
-										cellValue = formatter.formatCellValue(cell);
-
-										String removebullet1 = cellValue.replaceAll("^\\([A-Za-z]{1}\\)\\s*", "");
-
-										String removebullet2 = removebullet1.replaceAll("^\\[A-Za-z]{1}\\)\\s*", "");
-
-										String removebullet3 = removebullet2.replaceAll("^\\([ivxlcdmIVXLCDM]+\\)\\s*",
-												""); // for (i) (I) like this
-
-										String removebullet4 = removebullet3.replaceAll("^[ivxlcdmIVXLCDM]+\\)\\s*",
-												""); // for i) I) like this
-
-										String removebullet5 = removebullet4.replaceAll("^\\d+\\)\\s*", "");
-
-										String removebullet6 = removebullet5.replaceAll("^\\(d+\\)\\s*", "");
-
-										String removebullet7 = removebullet6.replaceAll("^[A-Za-z]{1}\\.\\s*", "");
-
-										String removebullet8 = removebullet7.replaceAll("^[A-Za-z]\\s+", "");
-
-										String removebullet9 = removebullet8.replaceAll("^\\s*[A-Za-z]{1}\\)\\s*", "");
-
-										String removebullet10 = removebullet9.replaceAll("\\$", "");
-
-										String removebullet11 = removebullet10.replaceAll("\\?", "");
-
-										String removebullet12 = removebullet11.replaceAll("\\#", "");
-
-										String removebullet13 = removebullet12.replaceAll("", "");
-
-										String removebullet14 = removebullet13.replaceAll("^\\d+\\.\\s*[A-Za-z]+$", ""); // for
-																															// 1.
-
-										String removebullet15 = removebullet14.replaceAll("^\\d+\\)\\s*[A-Za-z]", ""); // for
-																														// 1)
-
-										String removebullet16 = removebullet15.replaceAll("^\\(\\d+\\)\\s*[A-Za-z]",
-												""); // for (1)
-
-										String removebullet17 = removebullet16.replaceAll("^\\d+\\s*[A-Za-z]", ""); // for
-																													// 1
-
-										String removebullet18 = removebullet17.replaceAll("\\•\\s*[A-Za-z]", "");
-
-										String removebullet19 = removebullet18.replaceAll("\\-", "");
-
-										cell.setCellValue(removebullet19);
-
-									}
-
-								}
-
-							}
-							String value1 = formatter.formatCellValue(row1.getCell(0));
-							String value2 = formatter.formatCellValue(row1.getCell(1));
-							String value3 = formatter.formatCellValue(row1.getCell(2));
-							String value4 = formatter.formatCellValue(row1.getCell(3));
-							String value5 = formatter.formatCellValue(row1.getCell(4));
-							String value6 = formatter.formatCellValue(row1.getCell(5));
-							String value7 = formatter.formatCellValue(row1.getCell(6));
-							String value8 = formatter.formatCellValue(row1.getCell(7));
-							String value9 = formatter.formatCellValue(row1.getCell(8));
-							String value10 = formatter.formatCellValue(row1.getCell(9));
-							String value11 = formatter.formatCellValue(row1.getCell(10));
-							String value12 = formatter.formatCellValue(row1.getCell(11));
-							String value13 = formatter.formatCellValue(row1.getCell(12));
-							String value14 = formatter.formatCellValue(row1.getCell(13));
-							String value15 = formatter.formatCellValue(row1.getCell(14));
-							String value16 = formatter.formatCellValue(row1.getCell(15));
-							String value17 = formatter.formatCellValue(row1.getCell(16));
-							String value18 = formatter.formatCellValue(row1.getCell(17));
-							String value19 = formatter.formatCellValue(row1.getCell(18));
-							String value20 = formatter.formatCellValue(row1.getCell(19));
-							String value21 = formatter.formatCellValue(row1.getCell(20));
-							String value22 = formatter.formatCellValue(row1.getCell(21));
-							String value23 = formatter.formatCellValue(row1.getCell(22));
-							String value24 = formatter.formatCellValue(row1.getCell(23));
-							String value25 = formatter.formatCellValue(row1.getCell(24));
-
-							statement = con
-									.prepareStatement(DataIngestionQueryConstant.INSERT_INTO_DATAINGESTION_TABLE_DATA
-											.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-							statement.setLong(1, tablelist.getTableId());
-							statement.setString(2, value1);
-							statement.setString(3, value2);
-							statement.setString(4, value3);
-							statement.setString(5, value4);
-							statement.setString(6, value5);
-							statement.setString(7, value6);
-							statement.setString(8, value7);
-							statement.setString(9, value8);
-							statement.setString(10, value9);
-							statement.setString(11, value10);
-							statement.setString(12, value11);
-							statement.setString(13, value12);
-							statement.setString(14, value13);
-							statement.setString(15, value14);
-							statement.setString(16, value15);
-							statement.setString(17, value16);
-							statement.setString(18, value17);
-							statement.setString(19, value18);
-							statement.setString(20, value19);
-							statement.setString(21, value20);
-							statement.setString(22, value21);
-							statement.setString(23, value22);
-							statement.setString(24, value23);
-							statement.setString(25, value24);
-							statement.setString(26, value25);
+							statement = con.prepareStatement(DataIngestionQueryConstant.INSERT_TABLELIST
+									.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+							statement.setLong(1, fileId);
+							statement.setLong(2, tablelist.getTableId());
+							statement.setString(3, Table_name);
+							statement.setLong(4, score);
+							statement.setString(5, tablemapName);
 							statement.executeUpdate();
 
+							DataFormatter formatter = new DataFormatter();
+
+							for (Row row1 : sheet) {
+								for (Cell cell : row1) {
+
+									if (cell.getStringCellValue().isEmpty()) {
+										cell.setCellValue("NA");
+									}
+
+									boolean removeComma = context.get("my.config.removeComma", Boolean.class)
+											.orElse(false);
+									boolean removeBracket = context.get("my.config.removeBracket", Boolean.class)
+											.orElse(false);
+									boolean removeSpace = context.get("my.config.removeSpace", Boolean.class)
+											.orElse(false);
+
+									String cellValue = formatter.formatCellValue(cell);
+									Pattern regex = Pattern.compile("\\d+(\\.\\d+)?,\\s\\d+(\\.\\d+)");
+
+									Pattern regex1 = Pattern.compile("\\(\\d+\\s+\\d+\\.\\d+\\)");
+
+									Pattern regex2 = Pattern.compile("-?\\d+(,\\d+)*([,]\\d+)?([,]\\d+)*");
+
+									Pattern regex3 = Pattern.compile("^\\([\\d,.\\s]+\\)$");
+
+									Pattern regex4 = Pattern.compile("\\(\\d{1,4}\\.\\d{1,2}%\\)");
+
+									Pattern regex5 = Pattern.compile("\\s\\(d\\)\\s");
+
+									Pattern regex6 = Pattern.compile("\\(?[\\d,]+(\\.\\d+)?\\)?");
+
+									Matcher match = regex.matcher(cellValue);
+
+									Matcher match1 = regex1.matcher(cellValue);
+
+									Matcher match2 = regex2.matcher(cellValue);
+
+									Matcher match3 = regex3.matcher(cellValue);
+
+									Matcher match4 = regex4.matcher(cellValue);
+
+									Matcher match5 = regex5.matcher(cellValue);
+
+									Matcher match6 = regex6.matcher(cellValue);
+
+									if (match.matches() || match1.matches() || match2.matches() || match3.matches()
+											|| match4.matches() || match5.matches() || match6.matches()) {
+
+										if (removeComma) {
+
+											cellValue = cellValue.replace(",", "");
+										}
+
+										cell.setCellValue(cellValue);
+
+										if (removeBracket) {
+											cellValue = cellValue.replace("(", "-").replace(")", "");
+										}
+
+										cell.setCellValue(cellValue);
+
+									}
+									String pattern = "\\d+(\\.\\d+)?\\s+\\d+(\\.\\d+)?"; // regular expression for digit
+
+									regex = Pattern.compile(pattern);
+
+									match = regex.matcher(cellValue);
+
+									if (match.find()) {
+										if (removeSpace) {
+											cellValue = cellValue.replace(" ", "");
+										}
+										cell.setCellValue(cellValue);
+									}
+
+									for (int c = 0; c < 2; c++)
+
+									{
+
+										cell = row1.getCell(c);
+
+										if (cell != null) {
+
+											cellValue = formatter.formatCellValue(cell);
+
+											String removebullet1 = cellValue.replaceAll("^\\([A-Za-z]{1}\\)\\s*", "");
+
+											String removebullet2 = removebullet1.replaceAll("^\\[A-Za-z]{1}\\)\\s*",
+													"");
+
+											String removebullet3 = removebullet2
+													.replaceAll("^\\([ivxlcdmIVXLCDM]+\\)\\s*", ""); // for (i) (I) like
+																										// this
+
+											String removebullet4 = removebullet3.replaceAll("^[ivxlcdmIVXLCDM]+\\)\\s*",
+													""); // for i) I) like this
+
+											String removebullet5 = removebullet4.replaceAll("^\\d+\\)\\s*", "");
+
+											String removebullet6 = removebullet5.replaceAll("^\\(d+\\)\\s*", "");
+
+											String removebullet7 = removebullet6.replaceAll("^[A-Za-z]{1}\\.\\s*", "");
+
+											String removebullet8 = removebullet7.replaceAll("^[A-Za-z]\\s+", "");
+
+											String removebullet9 = removebullet8.replaceAll("^\\s*[A-Za-z]{1}\\)\\s*",
+													"");
+
+											String removebullet10 = removebullet9.replaceAll("\\$", "");
+
+											String removebullet11 = removebullet10.replaceAll("\\?", "");
+
+											String removebullet12 = removebullet11.replaceAll("\\#", "");
+
+											String removebullet13 = removebullet12.replaceAll("", "");
+
+											String removebullet14 = removebullet13.replaceAll("^\\d+\\.\\s*[A-Za-z]+$",
+													""); // for
+															// 1.
+
+											String removebullet15 = removebullet14.replaceAll("^\\d+\\)\\s*[A-Za-z]",
+													""); // for
+															// 1)
+
+											String removebullet16 = removebullet15.replaceAll("^\\(\\d+\\)\\s*[A-Za-z]",
+													""); // for (1)
+
+											String removebullet17 = removebullet16.replaceAll("^\\d+\\s*[A-Za-z]", ""); // for
+																														// 1
+
+											String removebullet18 = removebullet17.replaceAll("\\•\\s*[A-Za-z]", "");
+
+											String removebullet19 = removebullet18.replaceAll("\\-", "");
+
+											cell.setCellValue(removebullet19);
+
+										}
+
+									}
+
+								}
+								String value1 = formatter.formatCellValue(row1.getCell(0));
+								String value2 = formatter.formatCellValue(row1.getCell(1));
+								String value3 = formatter.formatCellValue(row1.getCell(2));
+								String value4 = formatter.formatCellValue(row1.getCell(3));
+								String value5 = formatter.formatCellValue(row1.getCell(4));
+								String value6 = formatter.formatCellValue(row1.getCell(5));
+								String value7 = formatter.formatCellValue(row1.getCell(6));
+								String value8 = formatter.formatCellValue(row1.getCell(7));
+								String value9 = formatter.formatCellValue(row1.getCell(8));
+								String value10 = formatter.formatCellValue(row1.getCell(9));
+								String value11 = formatter.formatCellValue(row1.getCell(10));
+								String value12 = formatter.formatCellValue(row1.getCell(11));
+								String value13 = formatter.formatCellValue(row1.getCell(12));
+								String value14 = formatter.formatCellValue(row1.getCell(13));
+								String value15 = formatter.formatCellValue(row1.getCell(14));
+								String value16 = formatter.formatCellValue(row1.getCell(15));
+								String value17 = formatter.formatCellValue(row1.getCell(16));
+								String value18 = formatter.formatCellValue(row1.getCell(17));
+								String value19 = formatter.formatCellValue(row1.getCell(18));
+								String value20 = formatter.formatCellValue(row1.getCell(19));
+								String value21 = formatter.formatCellValue(row1.getCell(20));
+								String value22 = formatter.formatCellValue(row1.getCell(21));
+								String value23 = formatter.formatCellValue(row1.getCell(22));
+								String value24 = formatter.formatCellValue(row1.getCell(23));
+								String value25 = formatter.formatCellValue(row1.getCell(24));
+
+								statement = con.prepareStatement(
+										DataIngestionQueryConstant.INSERT_INTO_DATAINGESTION_TABLE_DATA.replace(
+												DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+								statement.setLong(1, tablelist.getTableId());
+								statement.setString(2, value1);
+								statement.setString(3, value2);
+								statement.setString(4, value3);
+								statement.setString(5, value4);
+								statement.setString(6, value5);
+								statement.setString(7, value6);
+								statement.setString(8, value7);
+								statement.setString(9, value8);
+								statement.setString(10, value9);
+								statement.setString(11, value10);
+								statement.setString(12, value11);
+								statement.setString(13, value12);
+								statement.setString(14, value13);
+								statement.setString(15, value14);
+								statement.setString(16, value15);
+								statement.setString(17, value16);
+								statement.setString(18, value17);
+								statement.setString(19, value18);
+								statement.setString(20, value19);
+								statement.setString(21, value20);
+								statement.setString(22, value21);
+								statement.setString(23, value22);
+								statement.setString(24, value23);
+								statement.setString(25, value24);
+								statement.setString(26, value25);
+								statement.executeUpdate();
+
+							}
+							newtableId++;
 						}
-						newtableId++;
 					}
+					LOGGER.info("data extract and write in table");
+					statement = con.prepareStatement(DataIngestionQueryConstant.UPDATE_STATUSFILEEXTRACT
+							.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+					statement.setString(1, "extract");
+					statement.setLong(2, fileId);
+					statement.executeUpdate();
+					con.close();
+
+					} else {
+					System.out.println("date mismatch");
+					statement = con.prepareStatement(DataIngestionQueryConstant.DELETE_DATAINGESTION_FILEDETAILS
+							.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+					statement.setLong(1, fileId);
+					statement.executeUpdate();
+					System.out.println("delete dataingestion file details");
+					throw new DataIngestionDaoException("Unable to extract file due to file's date not being matched");
+
 				}
-				LOGGER.info("data extract and write in table");
-				statement = con.prepareStatement(DataIngestionQueryConstant.UPDATE_STATUSFILEEXTRACT
-						.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-				statement.setString(1, "extract");
-				statement.setLong(2, fileId);
-				statement.executeUpdate();
-				con.close();
-
-			} else {
-				System.out.println("date mismatch");
-				statement = con.prepareStatement(DataIngestionQueryConstant.DELETE_DATAINGESTION_FILEDETAILS
-						.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-				statement.setLong(1, fileId);
-				statement.executeUpdate();
-				System.out.println("delete dataingestion file details");
-				throw new DataIngestionDaoException("Unable to extract file due to file's date not being matched");
-
 			}
-		}
-		model.setStatus("extract");
-		return model;
-		
-		}catch (Exception e) {
+			model.setStatus("extract");
+			return model;
+
+		} catch (Exception e) {
 			// TODO: handle exception
 			throw new DataIngestionDaoException(e.getMessage());
-		}
-		finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(statement, con);
 		}
 
 	}
 
+	private String sanitizeFileName(String fileName) {
+		// Implement proper filename validation and sanitization logic here
+		// For example, you can remove characters that may cause issues in a file name
+		return fileName.replaceAll("[^a-zA-Z0-9_.-]", "_");
+	}
+
 	private int getMonthNumber(String month) {
-		   String[] months = {"JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"};
-	        for (int i = 0; i < months.length; i++) {
-	            if (months[i].equalsIgnoreCase(month)) {
-	                return i + 1; // Months are 1-based in LocalDate
-	            }
-	        }
-	        return -1; // Invalid month name
-	    }
-	
+		String[] months = { "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER",
+				"OCTOBER", "NOVEMBER", "DECEMBER" };
+		for (int i = 0; i < months.length; i++) {
+			if (months[i].equalsIgnoreCase(month)) {
+				return i + 1; // Months are 1-based in LocalDate
+			}
+		}
+		return -1; // Invalid month name
+	}
 
 	private String capitalizeFirstLetter(String input) {
 
@@ -1155,6 +1232,8 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 
 		} catch (Exception e) {
 			// TODO: handle exception
+		}finally {
+			InvestorDatabaseUtill.close(rs, psta, con);
 		}
 		return null;
 	}
@@ -1193,12 +1272,10 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 			e.printStackTrace();
 			throw new DataIngestionDaoException("unable to get" + e.getMessage());
 
+		} finally {
+
+			InvestorDatabaseUtill.close(pstmt, connection);
 		}
-		 finally {
-				
-				InvestorDatabaseUtill.close(pstmt, connection);
-			}
-		
 
 	}
 
@@ -1232,8 +1309,7 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 			// TODO: handle exception
 			e.printStackTrace();
 			throw new DataIngestionDaoException("unable to get" + e.getMessage());
-		}
-		finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(pstmt, connection);
 		}
@@ -1374,15 +1450,15 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		Connection connection = null;
 		PreparedStatement psta = null;
 		Date date = new Date();
-		
+
 		try {
 			connection = InvestorDatabaseUtill.getConnection();
 			psta = connection.prepareStatement(DataIngestionQueryConstant.INSERT_INTO_DATAINGESTION_MAPPINGTABLE
 					.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
 			Iterator ir = dataIngestionMappingTable.iterator();
-	
+
 			while (ir.hasNext()) {
-			
+
 				DataIngestionMappingModel dataIngestionMapping = (DataIngestionMappingModel) ir.next();
 				String mapId = UUID.randomUUID().toString();
 				dataIngestionMapping.setMapId(mapId);
@@ -1408,8 +1484,16 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 				psta.setString(19, dataIngestionMapping.getDenomination());
 				psta.setString(20, dataIngestionMapping.getConsolidated_standalone());
 				psta.setString(21, dataIngestionMapping.getCreatedBy());
+				psta.setString(22, dataIngestionMapping.getReportYear());
+				if(dataIngestionMapping.getReportType().trim().equals("Annual"))
+				{
+					psta.setString(23,"FY"+dataIngestionMapping.getReportYear().substring(2, 4));
+				}else
+				{
+					psta.setString(23,dataIngestionMapping.getReportType().trim()+"FY"+dataIngestionMapping.getReportYear().substring(2, 4));
+				}
 				psta.executeUpdate();
-			
+
 			}
 			return dataIngestionMappingTable;
 		} catch (Exception e) {
@@ -1547,7 +1631,7 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 			}
 
 		} catch (Exception e) {
-			
+
 			throw new DataIngestionDaoException(e.getMessage());
 		}
 
@@ -1640,13 +1724,11 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 			return model;
 		} catch (Exception e) {
 			// TODO: handle exception
-              throw new DataIngestionDaoException(e.getMessage());
+			throw new DataIngestionDaoException(e.getMessage());
+		} finally {
+			LOGGER.info("closing the connection");
+			InvestorDatabaseUtill.close(psta, connection);
 		}
-		 finally {
-				LOGGER.info("closing the connection");
-				InvestorDatabaseUtill.close(psta, connection);
-		 }
-	
 
 	}
 
@@ -1672,8 +1754,7 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			throw new DataIngestionDaoException("unable to update table name" + e.getMessage());
-		}
-		finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(psta, connection);
 		}
@@ -1704,13 +1785,17 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
+		}finally {
+
+			InvestorDatabaseUtill.close(pstmt, connection);
 		}
 		return null;
 
 	}
 
 	@Override
-	public void uploadExcelSheet(CompletedFileUpload file, long tableId, String dataBaseName) throws DataIngestionDaoException {
+	public void uploadExcelSheet(CompletedFileUpload file, long tableId, String dataBaseName)
+			throws DataIngestionDaoException {
 		// TODO Auto-generated method stub
 		Connection connection = null;
 		PreparedStatement statement = null;
@@ -1805,20 +1890,14 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 
 		} catch (Exception e) {
 			// TODO: handle exception
-            throw new DataIngestionDaoException(e.getMessage());
+			throw new DataIngestionDaoException(e.getMessage());
+		} finally {
+			LOGGER.info("closing the connection");
+			InvestorDatabaseUtill.close(statement, connection);
 		}
-		 finally {
-				LOGGER.info("closing the connection");
-				InvestorDatabaseUtill.close(statement, connection);
-		 }
 
 	}
 
-	
-
-
-
-	
 	@Override
 	public void deleteMultipleField(FiledData filedData, String dataBaseName) throws DataIngestionDaoException {
 
@@ -1842,11 +1921,10 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 			// TODO: handle exception
 			e.printStackTrace();
 			throw new DataIngestionDaoException("unable to delete " + e.getMessage());
+		} finally {
+			LOGGER.info("closing the connections");
+			InvestorDatabaseUtill.close(psta, con);
 		}
-		 finally {
-				LOGGER.info("closing the connections");
-				InvestorDatabaseUtill.close(psta, con);
-			}
 
 	}
 
@@ -1872,11 +1950,10 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			throw new DataIngestionDaoException("unable to merge table" + e.getMessage());
+		} finally {
+			LOGGER.info("closing the connections");
+			InvestorDatabaseUtill.close(psta, con);
 		}
-		 finally {
-				LOGGER.info("closing the connections");
-				InvestorDatabaseUtill.close(psta, con);
-			}
 
 	}
 
@@ -1926,8 +2003,7 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			throw new DataIngestionDaoException("unable to left shift data" + e.getMessage());
-		}
-		finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(psta, con);
 		}
@@ -1981,12 +2057,10 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		catch (Exception e) {
 			// TODO: handle exception
 			throw new DataIngestionDaoException("unable to right shift data" + e.getMessage());
-		}finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(psta, con);
 		}
-		 
-		
 
 	}
 
@@ -2067,8 +2141,7 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 
 		} catch (Exception e) {
 			throw new DataIngestionDaoException("unable to split table details" + e.getMessage());
-		}
-		finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(psta, con);
 		}
@@ -2097,12 +2170,11 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			throw new DataIngestionDaoException("unable to get" + e.getMessage());
-		}finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(psta, con);
 		}
-		 
-		
+
 	}
 
 	@Override
@@ -2124,8 +2196,7 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 
 		} catch (Exception e) {
 			throw new DataIngestionDaoException("unable to get" + e.getMessage());
-		}
-		finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(psta, con);
 		}
@@ -2789,15 +2860,14 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 			// TODO: handle exception
 			e.printStackTrace();
 			throw new DataIngestionDaoException("unable to get" + e.getMessage());
+		} finally {
+
+			InvestorDatabaseUtill.close(pstmt, connection);
 		}
-		 finally {
-				
-				InvestorDatabaseUtill.close(pstmt, connection);
-			}
-		
 
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public void deletefiledetailsbyFileid(long fileId, String dataBaseName) throws DataIngestionDaoException {
 		// TODO Auto-generated method stub
@@ -2820,15 +2890,19 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new DataIngestionDaoException("unable to delete" + e.getMessage());
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 
 	}
 
 	@Override
-	public NonProcessFilesDetails saveMultipleFiles(NonProcessFilesDetails model,String dataBaseName) throws DataIngestionDaoException {
+	public NonProcessFilesDetails saveMultipleFiles(NonProcessFilesDetails model, String dataBaseName)
+			throws DataIngestionDaoException {
 		Connection connection = null;
 		PreparedStatement psta = null;
-	   
+
 		try {
 			connection = InvestorDatabaseUtill.getConnection();
 			psta = connection.prepareStatement(DataIngestionQueryConstant.INSERT_INTO_NONPROCESSFILETABLES
@@ -2844,18 +2918,12 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 			psta.setLong(9, model.getCreatedOn());
 			psta.executeUpdate();
 			return model;
-		}
-		 catch (Exception e) {
+		} catch (Exception e) {
 			throw new DataIngestionDaoException(e.getMessage());
-		}
-		finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(psta, connection);
 		}
-		
-	
-	
-	
 
 	}
 
@@ -2883,8 +2951,7 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			throw new DataIngestionDaoException("unable to get " + e.getMessage());
-		}
-		finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(psta, con);
 		}
@@ -2921,10 +2988,10 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		model.setConsolidated_standalone(rs.getString("consolidated_standalone"));
 		model.setCreatedBy(rs.getString("createdBy"));
 		model.setCreatedOn(rs.getLong("createdOn"));
-		
+		model.setReportYear(rs.getString("reportYear"));
+
 		return model;
 	}
-
 
 	@Override
 	public DataIngestionModel getPreviewForNonProcessFile(int npFileId, DataIngestionModel ingestionModel,
@@ -2932,14 +2999,13 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 
 		try {
 			NonProcessFilesDetails details = this.getNopProcessFileDetail(npFileId, dataBaseName);
-		
+
 			ingestionModel.setNpFileId(details.getNpFileId());
 			ingestionModel.setFileName(details.getFileName());
 			ingestionModel.setFileType(details.getFileType());
 			ingestionModel.setFileData(details.getFileData());
 			return ingestionModel;
-			
-			
+
 		} catch (Exception e) {
 
 			throw new DataIngestionDaoException("Unable to get preview" + e.getMessage());
@@ -2948,7 +3014,8 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 	}
 
 	@SuppressWarnings("unused")
-	private NonProcessFilesDetails getNopProcessFileDetail(int npFileId, String dataBaseName) throws DataIngestionDaoException {
+	private NonProcessFilesDetails getNopProcessFileDetail(int npFileId, String dataBaseName)
+			throws DataIngestionDaoException {
 		Connection con = null;
 		PreparedStatement psta = null;
 		ResultSet rs = null;
@@ -2965,19 +3032,17 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 				details.setFileType(rs.getString("fileType"));
 				details.setFileData(rs.getBytes("fileData"));
 //				details.setCreatedBy(rs.getString("createdBy"));
-		
+
 				return details;
-			
+
 			}
 		} catch (Exception e) {
 			throw new DataIngestionDaoException(e.getMessage());
-		}
-		finally {
+		} finally {
 			LOGGER.debug("closing the connections");
 			InvestorDatabaseUtill.close(psta, con);
 		}
-		
-		
+
 		return null;
 
 	}
@@ -3011,16 +3076,15 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 				}
 			}
 			PDDocument newDocument = new PDDocument();
-            try
-            {
-			for (int pageNumber : pagesToExtract) {
-				System.out.println("pagesToExtract:" + pagesToExtract);
-				PDPage page = document.getPage(pageNumber - 1);
-				System.out.println("page" + page);
-				newDocument.addPage(page);
-			}
-            }catch (Exception e) {
-            	throw new DataIngestionDaoException("page number not found file");
+			try {
+				for (int pageNumber : pagesToExtract) {
+					System.out.println("pagesToExtract:" + pagesToExtract);
+					PDPage page = document.getPage(pageNumber - 1);
+					System.out.println("page" + page);
+					newDocument.addPage(page);
+				}
+			} catch (Exception e) {
+				throw new DataIngestionDaoException("page number not found file");
 			}
 
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -3033,7 +3097,7 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 			ingestionModel.setFileName(name);
 			ingestionModel.setFileType(fileType);
 			ingestionModel.setFileData(splitPdfBytes);
-			
+
 			return ingestionModel;
 		} catch (Exception e) {
 
@@ -3045,12 +3109,10 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 	@Override
 	public DataIngestionModel savePreviewFileForAllPages(int npFileId, DataIngestionModel ingestionModel,
 			String dataBaseName) throws DataIngestionDaoException {
-		Connection con = null;
-		PreparedStatement psta = null;
-		ResultSet rs = null;
+		
 		try {
 			DataIngestionModel model = this.getPreviewForNonProcessFile(npFileId, ingestionModel, dataBaseName);
-			DataIngestionModel response = this.finalSaveInDataIngetionTable(npFileId,model, dataBaseName);
+			DataIngestionModel response = this.finalSaveInDataIngetionTable(npFileId, model, dataBaseName);
 			return response;
 		} catch (Exception e) {
 			throw new DataIngestionDaoException(e.getMessage());
@@ -3062,12 +3124,10 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 	public DataIngestionModel savePreviewFileForSplited(int npFileId, DataIngestionModel ingestionModel,
 			String dataBaseName) throws DataIngestionDaoException {
 
-		Connection con = null;
-		PreparedStatement psta = null;
-		ResultSet rs = null;
+		
 		try {
 			DataIngestionModel model = getPreviewForSplittedFile(npFileId, ingestionModel, dataBaseName);
-			DataIngestionModel response = this.finalSaveInDataIngetionTable(npFileId,model, dataBaseName);
+			DataIngestionModel response = this.finalSaveInDataIngetionTable(npFileId, model, dataBaseName);
 			return response;
 		} catch (Exception e) {
 			throw new DataIngestionDaoException(e.getMessage());
@@ -3076,7 +3136,8 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 	}
 
 	@SuppressWarnings("resource")
-	private DataIngestionModel finalSaveInDataIngetionTable(int npFileId,DataIngestionModel model, String dataBaseName) throws DataIngestionDaoException{
+	private DataIngestionModel finalSaveInDataIngetionTable(int npFileId, DataIngestionModel model, String dataBaseName)
+			throws DataIngestionDaoException {
 		Connection con = null;
 		PreparedStatement psta = null;
 		ResultSet rs = null;
@@ -3087,8 +3148,8 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 
 			rs = psta.executeQuery();
 			while (rs.next()) {
-                Date d=new Date();
-                model.setCreatedOn(d.getTime());
+				Date d = new Date();
+				model.setCreatedOn(d.getTime());
 				long maxvalue = rs.getLong(1);
 				fileId = maxvalue;
 				System.out.println("call here");
@@ -3114,19 +3175,30 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 				psta.setString(17, model.getConsolidated_standalone());
 				psta.setString(18, model.getCreatedBy());
 				psta.setLong(19, model.getCreatedOn());
+				psta.setString(20, model.getReportYear());
+				
+
+				
+				if(model.getReportType().trim().equals("Annual"))
+				{
+					psta.setString(21,"FY"+model.getReportYear().substring(2, 4));
+				}else
+				{
+					psta.setString(21,model.getReportType().trim()+"FY"+model.getReportYear().substring(2, 4));
+				}
 				psta.executeUpdate();
 				LOGGER.info("data add in data ingestion file table");
 				LOGGER.info("extract the file");
-
+				
 				try {
-			this.extractFileByFileId(model.getFileId(),dataBaseName);  //call extract method
-				}catch (Exception e) {
+					this.extractFileByFileId(model.getFileId(), dataBaseName); // call extract method
+				} catch (Exception e) {
 					// TODO: handle exception
 					psta = con.prepareStatement(DataIngestionQueryConstant.DELETE_DATAINGESTION_FILEDETAILS
 							.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
 					psta.setLong(1, model.getFileId());
 					psta.executeUpdate();
-				throw new DataIngestionDaoException(e.getMessage());
+					throw new DataIngestionDaoException(e.getMessage());
 				}
 				model.setStatus("extract");
 				psta = con.prepareStatement(DataIngestionQueryConstant.UPDATE_STATUSNONPROCESSFILES
@@ -3139,12 +3211,12 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new DataIngestionDaoException(e.getMessage());
-			
-		}finally {
+
+		} finally {
 			LOGGER.info("closing the connections");
 			InvestorDatabaseUtill.close(psta, con);
 		}
-		
+
 		return null;
 	}
 
@@ -3153,216 +3225,171 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 		Connection con = null;
 		PreparedStatement psta = null;
 		ResultSet rs = null;
-		ArrayList<NonProcessFilesDetails> list=new ArrayList<>();
-		try
-		{
-			con=InvestorDatabaseUtill.getConnection();
-			psta=con.prepareStatement(DataIngestionQueryConstant.SELECT_NONPROCESSING_FILES.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+		ArrayList<NonProcessFilesDetails> list = new ArrayList<>();
+		try {
+			con = InvestorDatabaseUtill.getConnection();
+			psta = con.prepareStatement(DataIngestionQueryConstant.SELECT_NONPROCESSING_FILES
+					.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
 			System.out.println("check 1======>");
 			psta.setString(1, "new");
 			System.out.println("check 1======>");
-			rs=psta.executeQuery();
-			while(rs.next())
-			{
-				NonProcessFilesDetails details=buildFilesData(rs);
+			rs = psta.executeQuery();
+			while (rs.next()) {
+				NonProcessFilesDetails details = buildFilesData(rs);
 				list.add(details);
-				
+
 			}
 			return list;
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new DataIngestionDaoException(e.getMessage());
+		} finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
-		 finally {
-				
-				InvestorDatabaseUtill.close(psta, con);
-			}
-		
-		
+
 	}
 
 	private NonProcessFilesDetails buildFilesData(ResultSet rs) throws SQLException {
-		System.out.println("rs.getInt(\"npFileId\")====>"+rs.getInt("npFileId"));
-		NonProcessFilesDetails details=new NonProcessFilesDetails();
+		System.out.println("rs.getInt(\"npFileId\")====>" + rs.getInt("npFileId"));
+		NonProcessFilesDetails details = new NonProcessFilesDetails();
 		details.setNpFileId(rs.getInt("npFileId"));
 		details.setClient(rs.getString("client"));
 		details.setClientId(rs.getString("clientId"));
 		details.setFileName(rs.getString("fileName"));
 		details.setFileType(rs.getString("filetype"));
-		
-		
-		if(rs.getString("peers")!=null) {
-			 String suggestedPeers = rs.getString("peers");
-			 suggestedPeers = suggestedPeers.substring(1, suggestedPeers.length() - 1); // Remove the square brackets
-			    String[] suggestedPeer = suggestedPeers.split(", ");
-			    ArrayList<String> suggestedPeerlist = new ArrayList<>(Arrays.asList(suggestedPeer));
+
+		if (rs.getString("peers") != null) {
+			String suggestedPeers = rs.getString("peers");
+			suggestedPeers = suggestedPeers.substring(1, suggestedPeers.length() - 1); // Remove the square brackets
+			String[] suggestedPeer = suggestedPeers.split(", ");
+			ArrayList<String> suggestedPeerlist = new ArrayList<>(Arrays.asList(suggestedPeer));
 
 //			 ArrayList<String> suggestedPeerlist =new ArrayList<>();
 //			 suggestedPeerlist.add(suggestedPeers);
-			    details.setSuggestedPeers(suggestedPeerlist);
-			}else {
-				details.setSuggestedPeers(null);
+			details.setSuggestedPeers(suggestedPeerlist);
+		} else {
+			details.setSuggestedPeers(null);
 
-			}
-		
-		
+		}
+
 		return details;
-		
+
 	}
 
 	@Override
-	public ArrayList<DataIngestionMappingModel> getPriviewDataIngestionMappingTableData(ArrayList<DataIngestionMappingModel> dataIngestionMappingTable, String dataBaseName)
+	public ArrayList<DataIngestionMappingModel> getPriviewDataIngestionMappingTableData(
+			ArrayList<DataIngestionMappingModel> dataIngestionMappingTable, String dataBaseName)
 			throws DataIngestionDaoException {
-		   String valueString=null;
-	
-	
+		String valueString = null;
+
 		Iterator ir = dataIngestionMappingTable.iterator();
-		
+
 		while (ir.hasNext()) {
-		
+
 			DataIngestionMappingModel dataIngestionMapping = (DataIngestionMappingModel) ir.next();
-			System.out.println("ataIngestionMapping.getDenomination()"+dataIngestionMapping.getDenomination());
-		System.out.println("dataIngestionMapping.getLineItemName()"+dataIngestionMapping.getLineItemName());
-		dataIngestionMapping.setOriginalValue(dataIngestionMapping.getValue());
-			if(dataIngestionMapping.getLineItemName().contains("%"))
-			{
-				System.out.println("dataIngestionMapping"+dataIngestionMapping.getValue());
+			System.out.println("ataIngestionMapping.getDenomination()" + dataIngestionMapping.getDenomination());
+			System.out.println("dataIngestionMapping.getLineItemName()" + dataIngestionMapping.getLineItemName());
+			dataIngestionMapping.setOriginalValue(dataIngestionMapping.getValue());
+			if (dataIngestionMapping.getLineItemName().contains("%")) {
+				System.out.println("dataIngestionMapping" + dataIngestionMapping.getValue());
+			} else {
+				String regexIgnore = "^[a-zA-Z\\s-]*$";
+				switch (dataIngestionMapping.getDenomination()) {
+
+				case "Thousand":
+					valueString = dataIngestionMapping.getValue();
+					String regexPattern = "[,\\s]+";
+					valueString = valueString.replaceAll(regexPattern, "");
+					if (valueString.matches(regexIgnore)) {
+						dataIngestionMapping.setValue(valueString);
+					} else if (valueString.contains("bps")) {
+						dataIngestionMapping.setValue(valueString);
+					} else if (valueString.contains("%")) {
+						dataIngestionMapping.setValue(valueString);
+					} else {
+						valueString = valueString.replaceAll("[a-zA-Z]", "");
+						double ThousandValue = Double.parseDouble(valueString);
+						ThousandValue *= 1000;
+						dataIngestionMapping.setValue(String.valueOf(ThousandValue));
+					}
+					break;
+				case "Lakhs":
+					valueString = dataIngestionMapping.getValue();
+					String regexPattern1 = "[,\\s]+";
+					valueString = valueString.replaceAll(regexPattern1, "");
+					if (valueString.matches(regexIgnore)) {
+						dataIngestionMapping.setValue(valueString);
+					} else if (valueString.contains("bps")) {
+						dataIngestionMapping.setValue(valueString);
+					} else if (valueString.contains("%")) {
+						dataIngestionMapping.setValue(valueString);
+					} else {
+						valueString = valueString.replaceAll("[a-zA-Z]", "");
+						double lakhValue = Double.parseDouble(valueString);
+						lakhValue *= 100000;
+						dataIngestionMapping.setValue(String.valueOf(lakhValue));
+					}
+					break;
+				case "Crore":
+					valueString = dataIngestionMapping.getValue();
+					String regexPattern2 = "[,\\s]+";
+					valueString = valueString.replaceAll(regexPattern2, "");
+					if (valueString.matches(regexIgnore)) {
+						dataIngestionMapping.setValue(valueString);
+					} else if (valueString.contains("bps")) {
+						dataIngestionMapping.setValue(valueString);
+					} else if (valueString.contains("%")) {
+						dataIngestionMapping.setValue(valueString);
+					} else {
+						valueString = valueString.replaceAll("[a-zA-Z]", "");
+						double CoreValue = Double.parseDouble(valueString);
+						CoreValue *= 10000000;
+						dataIngestionMapping.setValue(String.valueOf(CoreValue));
+					}
+					break;
+				case "Million":
+					valueString = dataIngestionMapping.getValue();
+					String regexPattern3 = "[,\\s]+";
+					valueString = valueString.replaceAll(regexPattern3, "");
+					if (valueString.matches(regexIgnore)) {
+						dataIngestionMapping.setValue(valueString);
+					} else if (valueString.contains("bps")) {
+						dataIngestionMapping.setValue(valueString);
+					} else if (valueString.contains("%")) {
+						dataIngestionMapping.setValue(valueString);
+					} else {
+						valueString = valueString.replaceAll("[a-zA-Z]", "");
+						double millionValue = Double.parseDouble(valueString);
+						millionValue *= 1000000;
+						dataIngestionMapping.setValue(String.valueOf(millionValue));
+					}
+					break;
+				case "Billion":
+					valueString = dataIngestionMapping.getValue();
+					String regexPattern4 = "[,\\s]+";
+					valueString = valueString.replaceAll(regexPattern4, "");
+					if (valueString.matches(regexIgnore)) {
+						dataIngestionMapping.setValue(valueString);
+					} else if (valueString.contains("bps")) {
+						dataIngestionMapping.setValue(valueString);
+					} else if (valueString.contains("%")) {
+						dataIngestionMapping.setValue(valueString);
+					} else {
+						valueString = valueString.replaceAll("[a-zA-Z]", "");
+						System.out.println("value String " + valueString);
+						double billionValue = Double.parseDouble(valueString);
+						billionValue *= 1000000000;
+						dataIngestionMapping.setValue(String.valueOf(billionValue));
+					}
+
+					break;
+				default:
+					System.out.println("Invalid denomination.");
+				}
 			}
-			else {
-				  String regexIgnore = "^[a-zA-Z\\s-]*$";
-			switch ( dataIngestionMapping.getDenomination()) {
-			
-                case "Thousand":
-                	 valueString = dataIngestionMapping.getValue();
-            	     String regexPattern = "[,\\s]+";
-            	     valueString = valueString.replaceAll(regexPattern, "");
-                        if(valueString.matches(regexIgnore))
-                  	  {
-                  		 dataIngestionMapping.setValue(valueString);
-                  	  }
-                        else  if(valueString.contains("bps") )
-                        {
-                        	dataIngestionMapping.setValue(valueString);
-                        }
-                        else  if(valueString.contains("%") )
-                        {
-                        	dataIngestionMapping.setValue(valueString);
-                        }
-                  	  else 
-                  	  {
-                  		  valueString = valueString.replaceAll("[a-zA-Z]", "");
-                 	  double   ThousandValue = Double.parseDouble(valueString);
-                 	 ThousandValue *= 1000;
-                      dataIngestionMapping.setValue( String.valueOf(ThousandValue));
-                        }
-                break;
-                case "Lakhs":
-                	 valueString = dataIngestionMapping.getValue();
-            	     String regexPattern1 = "[,\\s]+";
-            	     valueString = valueString.replaceAll(regexPattern1, "");
-                     if(valueString.matches(regexIgnore))
-               	     {
-               		 dataIngestionMapping.setValue(valueString);
-               	    }
-                     else  if(valueString.contains("bps"))
-                	  {
-                		 dataIngestionMapping.setValue(valueString);
-                	  }
-                	  else  if(valueString.contains("%") )
-                      {
-                      	dataIngestionMapping.setValue(valueString);
-                      }
-                	  else 
-                	  {
-                		  valueString = valueString.replaceAll("[a-zA-Z]", "");
-                     double   lakhValue = Double.parseDouble(valueString);
-                     lakhValue *= 100000;
-                  dataIngestionMapping.setValue( String.valueOf(lakhValue));
-                      }
-               break;
-                case "Crore":
-                	  valueString = dataIngestionMapping.getValue();
-                	     String regexPattern2 = "[,\\s]+";
-                	     valueString = valueString.replaceAll(regexPattern2, "");
-                	     if(valueString.matches(regexIgnore))
-                   	     {
-                   		 dataIngestionMapping.setValue(valueString);
-                   	    }
-                         else if(valueString.contains("bps"))
-                	  {
-                		 dataIngestionMapping.setValue(valueString);
-                	  }
-                	  else  if(valueString.contains("%") )
-                      {
-                      	dataIngestionMapping.setValue(valueString);
-                      }
-                	  else 
-                	  {
-                		  valueString = valueString.replaceAll("[a-zA-Z]", "");
-                    double   CoreValue = Double.parseDouble(valueString);
-                    CoreValue *= 10000000;
-                 dataIngestionMapping.setValue( String.valueOf(CoreValue));
-                      }
-              break;
-                case "Million":
-                	  valueString = dataIngestionMapping.getValue();
-             	     String regexPattern3 = "[,\\s]+";
-             	     valueString = valueString.replaceAll(regexPattern3, "");
-             	    if(valueString.matches(regexIgnore))
-              	     {
-              		 dataIngestionMapping.setValue(valueString);
-              	    }
-                    else  if(valueString.contains("bps"))
-                	  {
-                		 dataIngestionMapping.setValue(valueString);
-                	  }
-                	  else	 if(valueString.contains("%") )
-                      {
-                      	dataIngestionMapping.setValue(valueString);
-                      }
-                	  else 
-                	  {
-                		  valueString = valueString.replaceAll("[a-zA-Z]", "");
-                    double  millionValue = Double.parseDouble(valueString);
-                    millionValue *= 1000000;
-                 dataIngestionMapping.setValue( String.valueOf(millionValue));
-                      }
-              break;
-                case "Billion":
-                	  valueString = dataIngestionMapping.getValue();
-              	     String regexPattern4 = "[,\\s]+";
-              	     valueString = valueString.replaceAll(regexPattern4, "");
-              	   if(valueString.matches(regexIgnore))
-             	     {
-             		 dataIngestionMapping.setValue(valueString);
-             	    }
-                   else   if(valueString.contains("bps"))
-                	  {
-                		 dataIngestionMapping.setValue(valueString);
-                	  }
-                	  else  if(valueString.contains("%") )
-                      {
-                      	dataIngestionMapping.setValue(valueString);
-                      }
-                	  else 
-                	  {
-                		  valueString = valueString.replaceAll("[a-zA-Z]", "");
-                	  System.out.println("value String "+valueString);
-                    double  billionValue = Double.parseDouble(valueString);
-                    billionValue *= 1000000000;
-                 dataIngestionMapping.setValue( String.valueOf(billionValue));
-                      }
-                 
-              break;
-                default:
-                    System.out.println("Invalid denomination.");
-			}  
-			}
-	}
-		
+		}
+
 		return dataIngestionMappingTable;
 	}
 
-
-	
 }

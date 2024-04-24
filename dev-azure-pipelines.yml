@@ -14,8 +14,8 @@ parameters:
     type: boolean
     default: false
 
-trigger:
-- dev
+trigger: none
+# - dev
 
 variables:
 - name: build_agent_pool
@@ -132,7 +132,7 @@ stages:
         steps:
           - checkout: self
 
-          - task: synopsys-detect.synopsys-detect.synopsys-detect-task.SynopsysDetectTask@8
+          - task: synopsys-detect.synopsys-detect.synopsys-detect-task.SynopsysDetectTask@9
             displayName: 'Black Duck - Synopsys Detect for your build '
             inputs:
               BlackDuckService: 'black_duck'

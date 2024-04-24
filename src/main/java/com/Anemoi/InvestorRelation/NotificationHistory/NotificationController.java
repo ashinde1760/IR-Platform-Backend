@@ -36,7 +36,7 @@ public class NotificationController {
 	{
 		try
 		{
-			System.out.println("userEmail" +userEmail);
+			
 			String response=this.notificationService.clearAllNotification(userEmail);
 			return response;
 		}

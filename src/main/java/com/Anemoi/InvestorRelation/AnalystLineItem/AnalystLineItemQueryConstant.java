@@ -20,30 +20,30 @@ public class AnalystLineItemQueryConstant {
 	
 	public static final String CREATEDBY = "createdBy";
 
-	public static final String INSERT_INTO_ANALYSTLINE_ITEM = "INSERT INTO INV_RELATIONS.dev.analystLineItem values(?,?,?,?,?,?,?,?)";
+	public static final String INSERT_INTO_ANALYSTLINE_ITEM = "INSERT INTO #$DataBaseName#$.dev.analystLineItem values(?,?,?,?,?,?,?,?)";
 
-	public static final String SELECT_ANALYSTLINEITEM_BY_ID = "SELECT * FROM INV_RELATIONS.dev.analystLineItem where analystLineId=?";
+	public static final String SELECT_ANALYSTLINEITEM_BY_ID = "SELECT * FROM #$DataBaseName#$.dev.analystLineItem where analystLineId=?";
 
-	public static final String SELECT_ANALYSTLINEITEM = "SELECT * FROM INV_RELATIONS.dev.analystLineItem";
+	public static final String SELECT_ANALYSTLINEITEM = "SELECT * FROM #$DataBaseName#$.dev.analystLineItem";
 
-	public static final String SELECT_ANALYSTLINEITEM_BY_ANALYSTNAME = "SELECT * FROM INV_RELATIONS.dev.analystLineItem where analystName=? and masterTableSource=?";
+	public static final String SELECT_ANALYSTLINEITEM_BY_ANALYSTNAME = "SELECT * FROM #$DataBaseName#$.dev.analystLineItem where analystName=? and masterTableSource=?";
 
-	public static final String UPDATE_ANALYSTLINEITEM = "UPDATE INV_RELATIONS.dev.analystLineItem SET lineItemName=? where analystName=? and analystLineItemName=?";
+	public static final String UPDATE_ANALYSTLINEITEM = "UPDATE #$DataBaseName#$.dev.analystLineItem SET lineItemName=? where analystName=? and analystLineItemName=?";
 
-	public static final String UPDATE_ANALYSTLINEITEM_BYEXELSHEET = "UPDATE INV_RELATIONS.dev.analystLineItem SET lineItemName=?,analystTableHeaderName=? ,masterTableSource=? where analystName=? and analystLineItemName=?";
+	public static final String UPDATE_ANALYSTLINEITEM_BYEXELSHEET = "UPDATE #$DataBaseName#$.dev.analystLineItem SET lineItemName=?,analystTableHeaderName=? ,masterTableSource=? where analystName=? and analystLineItemName=?";
 
-	public static final String SELECT_FOR_MULTIPLE_ANALYSTLINETEM = "SELECT  lineItemName FROM  INV_RELATIONS.dev.analystLineItem where analystName=?";
+	public static final String SELECT_FOR_MULTIPLE_ANALYSTLINETEM = "SELECT  lineItemName FROM  #$DataBaseName#$.dev.analystLineItem where analystName=?";
 
-	public static final String SELECT_ANALYSTLINETEMNAME = "SELECT  analystLineItemName FROM  INV_RELATIONS.dev.analystLineItem where analystName=?";
+	public static final String SELECT_ANALYSTLINETEMNAME = "SELECT  analystLineItemName FROM  #$DataBaseName#$.dev.analystLineItem where analystName=?";
 
-	public static final String SELECT_ANALYSTLINETEMNAME2 = "SELECT  analystLineItemName FROM  INV_RELATIONS.dev.analystLineItem where analystName=? and NOT analystLineId =?";
+	public static final String SELECT_ANALYSTLINETEMNAME2 = "SELECT  analystLineItemName FROM  #$DataBaseName#$.dev.analystLineItem where analystName=? and NOT analystLineId =?";
 
-	public static final String UPDATE_ANALYSTLINE_ITEMNOMENCLURE = "UPDATE INV_RELATIONS.dev.analystLineItem SET analystName=?, analystLineItemName=? ,analystTableHeaderName=? ,masterTableSource=? WHERE analystLineId=?";
+	public static final String UPDATE_ANALYSTLINE_ITEMNOMENCLURE = "UPDATE #$DataBaseName#$.dev.analystLineItem SET analystName=?, analystLineItemName=? ,analystTableHeaderName=? ,masterTableSource=? WHERE analystLineId=?";
 
-	public static final String SELECT_ANALYSTNAME = "SELECT analystName FROM INV_RELATIONS.dev.analystDetails ";
+	public static final String SELECT_ANALYSTNAME = "SELECT analystName FROM #$DataBaseName#$.dev.analystDetails ";
 
-	public static final String SELECT_CURRENTDATEMAPPING = "SELECT * FROM INV_RELATIONS.dev.analystLineItem WHERE createdOn >= ? AND createdOn < ? AND lineItemName IS NOT NULL";
+	public static final String SELECT_CURRENTDATEMAPPING = "SELECT * FROM #$DataBaseName#$.dev.analystLineItem WHERE createdOn >= ? AND createdOn < ? AND lineItemName IS NOT NULL";
 
-	public static final String SELECT_CURRENTDATEADDLINEITEM = "SELECT * FROM INV_RELATIONS.dev.analystLineItem WHERE createdOn >= ? AND createdOn < ? AND lineItemName IS NULL";
+	public static final String SELECT_CURRENTDATEADDLINEITEM = "SELECT * FROM #$DataBaseName#$.dev.analystLineItem WHERE createdOn >= ? AND createdOn < ? AND lineItemName IS NULL";
 
 }

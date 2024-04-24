@@ -58,6 +58,9 @@ public class NotificationDaoImli implements NotificationDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return null;
 	}
@@ -108,6 +111,9 @@ public class NotificationDaoImli implements NotificationDao {
 			return "Clear Notification";
 		} catch (Exception e) {
 			// TODO: handle exception
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return null;
 
@@ -130,26 +136,36 @@ public class NotificationDaoImli implements NotificationDao {
 
 		try {
 			System.out.println("userEmail" + userEmail);
+			System.out.println("dataBaseName" + dataBaseName);
 
 			con = InvestorDatabaseUtill.getConnection();
-			psta = con.prepareStatement(NotificationQueryConstant.SELECT_NOTIFICATION_HISTORY
+//			psta = con.prepareStatement(NotificationQueryConstant.SELECT_NOTIFICATION_HISTORY
+//					.replace(NotificationQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+			psta = con.prepareStatement(NotificationQueryConstant.UPDATE_UAERLIST
 					.replace(NotificationQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-			rs = psta.executeQuery();
-			while (rs.next()) {
+			psta.setString(1,userEmail);
+			psta.setString(2,"%"+userEmail+"%");
+			psta.executeUpdate();
 
-				this.removeUser(rs, userEmail, psta, con, dataBaseName);
-			}
+//			rs = psta.executeQuery();
+//			while (rs.next()) {
+//
+//				this.removeUser(rs, userEmail, psta, con, dataBaseName);
+//			}
 
 			return "Clear All Notification";
 		} catch (Exception e) {
 			// TODO: handle exception
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return null;
 	}
 
 	private void removeUser(ResultSet rs, String userEmail, PreparedStatement psta, Connection con, String dataBaseName)
 			throws SQLException {
-
+		try {
 		long nid = rs.getLong("nId");
 		String participantField = rs.getString("users");
 		participantField = participantField.substring(1, participantField.length() - 1); // Remove the square brackets
@@ -165,6 +181,13 @@ public class NotificationDaoImli implements NotificationDao {
 		psta.setString(1, participantList.toString());
 		psta.setLong(2, nid);
 		psta.executeUpdate();
+		}catch(Exception e)
+		{
+			e.printStackTrace();
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
+		}
 
 	}
 

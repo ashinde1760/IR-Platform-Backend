@@ -1,5 +1,5 @@
 package com.Anemoi.InvestorRelation.MeetingScheduler;
-
+ 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -15,12 +15,12 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-
+ 
 import javax.mail.Session;
 import javax.mail.Transport;
-
+ 
 import org.json.simple.JSONObject;
-
+ 
 import com.Anemoi.InvestorRelation.Audithistory.AuditHistoryEntity;
 import com.Anemoi.InvestorRelation.Audithistory.AuditHistoryService;
 import com.Anemoi.InvestorRelation.ClientDetails.ClientDetailsEntity;
@@ -40,32 +40,28 @@ import com.microsoft.graph.models.ItemBody;
 import com.microsoft.graph.models.OnlineMeeting;
 import com.microsoft.graph.requests.GraphServiceClient;
 import com.microsoft.graph.requests.UserRequestBuilder;
-
+ 
 import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-
-
+ 
+ 
 @Singleton
 public class ServiceImp implements ServiceInterface{
-
+ 
 	@Inject
 	MeetingDao meetingDao;
-	
 	@Inject
 	private AuditHistoryService auditHistoryService;
-	
 	@Inject
 	private MailService mailService;
-	
 	@Inject 
 	private NotificationService notificationService;
-	
 	private static final Object STATUS = "status";
 	private static final Object SUCCESS = "success";
 	private static final Object MSG = "msg";
 	private static String DATABASENAME = "databasename";
-
+ 
 	private static String dataBaseName() {
 		List<String> tenentList = ReadPropertiesFile.getAllTenant();
 		for (String tenent : tenentList) {
@@ -73,7 +69,6 @@ public class ServiceImp implements ServiceInterface{
 		}
 		return DATABASENAME;
 	}
-	
 	@Override
 	public MSTeamschedule schdeulemsteammeeting(MSTeamschedule msts) throws ServiceException {
 //		Transport transport = null;
@@ -83,7 +78,6 @@ public class ServiceImp implements ServiceInterface{
 //		Session session = com.Anemoi.MailSession.MailSessionInstance.getMailSession();
 //		transport = session.getTransport();
 //		transport.connect();
-		
 		if(msts.getMeetingType().equalsIgnoreCase("Microsoft Teams"))
 		{
 		MSTeamschedule responseobject=this.meetingDao.saveTeamMeetingSchedule(msts,dataBaseName);
@@ -94,7 +88,6 @@ public class ServiceImp implements ServiceInterface{
 		entity.setDescription("User Schedule teams meeting");
 		entity.setCreatedOn(d.getTime());
 		this.auditHistoryService.addAuditHistory(entity);
-		
 //		ArrayList<ClientDetailsEntity> analystAdminList=this.meetingDao.getAnalsytAdminByClientName(msts.getClientName(),dataBaseName);
 //	    List<String> clientAdmins=new ArrayList<>();
 //	    List<String> analystAdmins=new ArrayList<>();
@@ -103,7 +96,6 @@ public class ServiceImp implements ServiceInterface{
 //			analystAdmins.addAll(client.getAssignAA());
 //		}
 //	    mailService.newMeetingScheduleMailSendToClientAdmin(transport,msts,clientAdmins,analystAdmins);
-		
 		//notification code
 		List<String> ea=new ArrayList<>();
 		ea.add(msts.getCreatedBy());
@@ -115,8 +107,7 @@ public class ServiceImp implements ServiceInterface{
 		e.setCreatedOn(d2.getTime());
 		this.notificationService.addNotificationHistory(e);
 		return responseobject;
-		
-		
+
 		}
 		else if(msts.getMeetingType().equalsIgnoreCase("Google Meet"))
 		{
@@ -128,7 +119,6 @@ public class ServiceImp implements ServiceInterface{
 			entity.setDescription("User Schedule google meeting");
 			entity.setCreatedOn(d.getTime());
 			this.auditHistoryService.addAuditHistory(entity);
-			
 //			ArrayList<ClientDetailsEntity> analystAdminList=this.meetingDao.getAnalsytAdminByClientName(msts.getClientName(),dataBaseName);
 //		    List<String> clientAdmins=new ArrayList<>();
 //		    List<String> analystAdmins=new ArrayList<>();
@@ -151,7 +141,6 @@ public class ServiceImp implements ServiceInterface{
 		}
 		else {
 			MSTeamschedule othermeetingRespo=this.meetingDao.saveOtherTypeOfMeeting(msts,dataBaseName);
-			
 			Date d=new Date();
 			AuditHistoryEntity entity=new AuditHistoryEntity();
 			entity.setCreatedBy(msts.getCreatedBy());
@@ -159,9 +148,7 @@ public class ServiceImp implements ServiceInterface{
 			entity.setDescription("User Schedule OtherType of meeting");
 			entity.setCreatedOn(d.getTime());
 			this.auditHistoryService.addAuditHistory(entity);
-			
-			
-			
+
 //			ArrayList<ClientDetailsEntity> analystAdminList=this.meetingDao.getAnalsytAdminByClientName(msts.getClientName(),dataBaseName);
 //		    List<String> clientAdmins=new ArrayList<>();
 //		    List<String> analystAdmins=new ArrayList<>();
@@ -170,7 +157,6 @@ public class ServiceImp implements ServiceInterface{
 //				analystAdmins.addAll(client.getAssignAA());
 //			}
 //		    mailService.newMeetingScheduleMailSendToClientAdmin(transport,msts,clientAdmins,analystAdmins);
-			
 			//notification code
 			List<String> ea=new ArrayList<>();
 			ea.add(msts.getCreatedBy());
@@ -182,20 +168,16 @@ public class ServiceImp implements ServiceInterface{
 			e.setCreatedOn(dd.getTime());
 			this.notificationService.addNotificationHistory(e);
 			return  othermeetingRespo;
-			
 		     }
-		
-	
+
 		}
 		catch (Exception e) {
-
+ 
                 throw new ServiceException(e.getMessage());
 		}
-		
-	
-		
-	}
 
+	}
+ 
 	@Override
 	public ArrayList<MSTeamschedule> getmeedingSheduleList() throws ServiceException {
         try
@@ -205,11 +187,11 @@ public class ServiceImp implements ServiceInterface{
         	return responselist;
         }
     	catch (Exception e) {
-
+ 
             throw new ServiceException(e.getMessage());
 	}
 	}
-
+ 
 	@Override
 	public MSTeamschedule updateMeetingSchedule(long meetingSheduleId, MSTeamschedule teamschedule)
 			throws ServiceException {
@@ -220,7 +202,6 @@ public class ServiceImp implements ServiceInterface{
 //		Session session = com.Anemoi.MailSession.MailSessionInstance.getMailSession();
 //		transport = session.getTransport();
 //		transport.connect();
-		
 		if(teamschedule.getMeetingType().equalsIgnoreCase("Microsoft Teams"))
 		{
 		MSTeamschedule responseobject=this.meetingDao.updateTeamsmeetingSchedule(meetingSheduleId,teamschedule,dataBaseName);
@@ -231,8 +212,7 @@ public class ServiceImp implements ServiceInterface{
 			entity.setDescription("Teams Meeting updated in application");
 			entity.setCreatedOn(d.getTime());
 			this.auditHistoryService.addAuditHistory(entity);
-			
-			
+
 //			ArrayList<ClientDetailsEntity> analystAdminList=this.meetingDao.getAnalsytAdminByClientName(teamschedule.getClientName(),dataBaseName);
 //		    List<String> clientAdmins=new ArrayList<>();
 //		    List<String> analystAdmins=new ArrayList<>();
@@ -241,7 +221,6 @@ public class ServiceImp implements ServiceInterface{
 //				analystAdmins.addAll(client.getAssignAA());
 //			}
 //		    mailService.updateMeetingMailSendToClientAdmin(transport,teamschedule,clientAdmins,analystAdmins);
-			
 			//notification code
 			List<String> ea=new ArrayList<>();
 			ea.add(teamschedule.getModifiedBy());
@@ -257,7 +236,6 @@ public class ServiceImp implements ServiceInterface{
 		else if(teamschedule.getMeetingType().equalsIgnoreCase("Google Meet"))
 		{
 			MSTeamschedule response=this.meetingDao.updategoogleMeetingSchedule(meetingSheduleId,teamschedule,dataBaseName);
-			
 			 Date d=new Date();
 				AuditHistoryEntity entity=new AuditHistoryEntity();
 				entity.setCreatedBy(teamschedule.getModifiedBy());
@@ -265,7 +243,6 @@ public class ServiceImp implements ServiceInterface{
 				entity.setDescription("Google Meeting updated in application");
 				entity.setCreatedOn(d.getTime());
 				this.auditHistoryService.addAuditHistory(entity);
-				
 //				ArrayList<ClientDetailsEntity> analystAdminList=this.meetingDao.getAnalsytAdminByClientName(teamschedule.getClientName(),dataBaseName);
 //			    List<String> clientAdmins=new ArrayList<>();
 //			    List<String> analystAdmins=new ArrayList<>();
@@ -274,7 +251,6 @@ public class ServiceImp implements ServiceInterface{
 //					analystAdmins.addAll(client.getAssignAA());
 //				}
 //			    mailService.updateMeetingMailSendToClientAdmin(transport,teamschedule,clientAdmins,analystAdmins);
-				
 				//notification code
 				List<String> ea=new ArrayList<>();
 				ea.add(teamschedule.getModifiedBy());
@@ -290,7 +266,6 @@ public class ServiceImp implements ServiceInterface{
 		else
 		{
 			MSTeamschedule response=this.meetingDao.updateOtherTypeOfMeeting(meetingSheduleId,teamschedule,dataBaseName);
-		
 		 Date d=new Date();
 			AuditHistoryEntity entity=new AuditHistoryEntity();
 			entity.setCreatedBy(teamschedule.getModifiedBy());
@@ -298,7 +273,6 @@ public class ServiceImp implements ServiceInterface{
 			entity.setDescription("otherType Meeting updated in application");
 			entity.setCreatedOn(d.getTime());
 			this.auditHistoryService.addAuditHistory(entity);
-			
 //			ArrayList<ClientDetailsEntity> analystAdminList=this.meetingDao.getAnalsytAdminByClientName(teamschedule.getClientName(),dataBaseName);
 //		    List<String> clientAdmins=new ArrayList<>();
 //		    List<String> analystAdmins=new ArrayList<>();
@@ -307,8 +281,7 @@ public class ServiceImp implements ServiceInterface{
 //				analystAdmins.addAll(client.getAssignAA());
 //			}
 //		    mailService.updateMeetingMailSendToClientAdmin(transport,teamschedule,clientAdmins,analystAdmins);
-		
-			
+
 			//notification code
 			List<String> ea=new ArrayList<>();
 			ea.add(teamschedule.getModifiedBy());
@@ -320,16 +293,14 @@ public class ServiceImp implements ServiceInterface{
 			e.setCreatedOn(d2.getTime());
 			this.notificationService.addNotificationHistory(e);
 		return response;
-			
 		}
 		}
 		catch (Exception e) {
-
+ 
                 throw new ServiceException(e.getMessage());
 		}
-		
 	}
-
+ 
 	@SuppressWarnings("unchecked")
 	@Override
 	public String deleteScheduleMeeting(long meetingSheduleId,String createdBy) throws ServiceException {
@@ -354,7 +325,6 @@ public class ServiceImp implements ServiceInterface{
 	if(meetingtype.equalsIgnoreCase("Microsoft Teams"))
 	{
 		this.meetingDao.deleteScheduleMeetingdetails(meetingId,eventId,dataBaseName);
-		
 		 Date d=new Date();
 			AuditHistoryEntity entity=new AuditHistoryEntity();
 			entity.setCreatedBy(createdBy);
@@ -373,13 +343,10 @@ public class ServiceImp implements ServiceInterface{
 			entity.setDescription("delete google meeting in appliation");
 			entity.setCreatedOn(d.getTime());
 			this.auditHistoryService.addAuditHistory(entity);
-	
 	}
 	else
 	{
-		
 		this.meetingDao.deleteOtherTypeOFMeeting(meetingSheduleId,dataBaseName);
-		
 		 Date d=new Date();
 			AuditHistoryEntity entity=new AuditHistoryEntity();
 			entity.setCreatedBy(createdBy);
@@ -387,27 +354,21 @@ public class ServiceImp implements ServiceInterface{
 			entity.setDescription("delete Other meeting in appliation");
 			entity.setCreatedOn(d.getTime());
 			this.auditHistoryService.addAuditHistory(entity);
-	
 	}
-	
-	
-		
+
 	JSONObject reposneJSON = new JSONObject();
 	reposneJSON.put(STATUS, SUCCESS);
 	reposneJSON.put(MSG, "delete meeting schedule");
 	return reposneJSON.toString();
 		}
 		catch (Exception ex) {
-			
 			throw new ServiceException(ex.getMessage());
 		}
-		
 	}
-
+ 
 	@Override
 	public MSTeamschedule getMeetingById(long meetingSheduleId) throws ServiceException {
 		// TODO Auto-generated method stub
-		
 		String dataBaseName=ServiceImp.dataBaseName();
 		try
 		{
@@ -418,41 +379,37 @@ public class ServiceImp implements ServiceInterface{
 			throw new ServiceException(e.getMessage());
 		}
 	}
-
+ 
 	@Override
 	 @Scheduled(fixedDelay = "1m") 
 	public String updateMeetingStatus() throws ServiceException, SQLException 
 	{
 		try
 		{
-	
 		       Date currentDate = new Date();
-
+ 
 		       // Define the desired format
 		        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
-
+ 
 		        // Get the time zone offset
 		        TimeZone timeZone = TimeZone.getDefault();
 		        int rawOffsetMillis = timeZone.getRawOffset();
 		        int hours = rawOffsetMillis / (60 * 60 * 1000);
 		        int minutes = Math.abs(rawOffsetMillis / (60 * 1000)) % 60;
 		        String timezoneOffset = String.format("%+03d:%02d", hours, minutes);
-
+ 
 		           // Format the date with the time zone offset
 		        dateFormat.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata")); // Adjust the desired time zone here
 		        String formattedDate = dateFormat.format(currentDate) + timezoneOffset;
-
+ 
 		        // Print the formatted date
 		        System.out.println("formattedDate"+formattedDate);
-		        
-		        
 
+ 
 		  String dataBaseName=ServiceImp.dataBaseName();
               Connection con=InvestorDatabaseUtill.getConnection();
               PreparedStatement preparedStatement=con.prepareStatement(MeetingShedularQueryConstant.UPDATE_MEETINGSTATUS.replace(MeetingShedularQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-     
               preparedStatement.setObject(1, formattedDate);
-	 
 	            int rowsAffected = preparedStatement.executeUpdate();
 	            if (rowsAffected > 0) {
 	                System.out.println("Meeting statuses updated successfully.");
@@ -460,17 +417,13 @@ public class ServiceImp implements ServiceInterface{
 	                System.out.println("No meetings to update.");
 	            }
 	            return "update meeting status";
-	        
 		}
 	        catch (Exception e) {
 				// TODO: handle exception
 	        	throw new ServiceException(e.getMessage());
 			}
-		
-	
-		
-		        
-	
-	}
 
+
+	}
+ 
 }

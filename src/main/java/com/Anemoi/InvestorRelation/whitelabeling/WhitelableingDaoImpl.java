@@ -172,6 +172,9 @@ public class WhitelableingDaoImpl implements WhiteLableingDao {
         }
         catch (Exception e) {
         	 throw new DaoException("unable to get"+e.getMessage());
+	}finally {
+
+		InvestorDatabaseUtill.close(psta, con);
 	}
 		return null;
 	}

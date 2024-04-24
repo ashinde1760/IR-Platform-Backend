@@ -2,6 +2,9 @@
 
 micronaut:
    server:
+    http:
+      client:
+        read-timeout: 30
     cors:
       enabled: true      
     port: 8081
@@ -30,14 +33,16 @@ my:
     removeBracket: true
     removeSpace: true      
     dateMatcher: true  
-
+    apiKey: "8e9e6a3f925b4d84a56930a4b7344f02"
+    
+    
 files:
     local:
       base-dir: '${user.home}/MyCenter/InvestorRelation/media'
       file-dir: '${user.home}/MyCenter/InvestorRelation/logo'
       multipart-upload-threshold: 5368709120
       max-uplaod-threads: 5
-      
+    
         
 #datasources:
 #  default:

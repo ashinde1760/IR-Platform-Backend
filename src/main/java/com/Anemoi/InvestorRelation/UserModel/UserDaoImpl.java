@@ -172,8 +172,8 @@ public class UserDaoImpl implements UserDao {
 	public UserEntity updateUser(UserEntity user, String userid, String dataBaseName) throws UserModelDaoException {
 		Connection connection = null;
 		PreparedStatement pstmt = null;
-		LOGGER.info(".in update user database name is ::" + dataBaseName + " userId is ::" + userid
-				+ " request user is ::" + user);
+//		LOGGER.info(".in update user database name is ::" + dataBaseName + " userId is ::" + userid
+//				+ " request user is ::" + user);
 
 		try {
 
@@ -282,6 +282,9 @@ public class UserDaoImpl implements UserDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			throw new UserModelDaoException("unable to get user details by email id");
+		}finally {
+
+			InvestorDatabaseUtill.close(pstmt, connection);
 		}
 		return null;
 	}
@@ -381,6 +384,9 @@ public class UserDaoImpl implements UserDao {
 
 			throw new UserModelDaoException(e.getMessage());
 
+		}finally {
+
+			InvestorDatabaseUtill.close(pstmt, connection);
 		}
 
 	}
@@ -408,6 +414,9 @@ public class UserDaoImpl implements UserDao {
 
 		catch (Exception e) {
 			throw new UserModelDaoException(e.getMessage());
+		}finally {
+
+			InvestorDatabaseUtill.close(pstmt, connection);
 		}
 	}
 
@@ -432,6 +441,9 @@ public class UserDaoImpl implements UserDao {
 			return list;
 		} catch (Exception e) {
 			throw new UserModelDaoException(e.getMessage());
+		}finally {
+
+			InvestorDatabaseUtill.close(pstmt, connection);
 		}
 	}
 
@@ -489,6 +501,34 @@ public class UserDaoImpl implements UserDao {
 			InvestorDatabaseUtill.close(rs, pstmt, connection);
 		}
 		return null;
+	}
+
+	@Override
+	public ArrayList<String> getAllEmailForClientAdmin(UserEntity user, String dataBaseName) throws UserModelDaoException {
+		Connection connection = null;
+		PreparedStatement pstmt = null;
+		ResultSet result = null;
+		ArrayList<String> emailList = new ArrayList<>();
+
+		try {
+			connection = InvestorDatabaseUtill.getConnection();
+			pstmt = connection.prepareStatement(UserQueryConstant.SELECT_EMAILID_CLIENT_ADMIN
+					.replace(UserQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+			pstmt.setString(1, "Active");
+			result = pstmt.executeQuery();
+			while (result.next()) {
+				String emailIds = buildeMail(result);
+				emailList.add(emailIds);
+			}
+			return emailList;
+		} catch (Exception e) {
+
+			throw new UserModelDaoException("unable to email id" + e.getMessage());
+
+		} finally {
+			LOGGER.debug("closing the connections");
+			InvestorDatabaseUtill.close(result, pstmt, connection);
+		}
 	}
 	}
 

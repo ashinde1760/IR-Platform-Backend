@@ -376,6 +376,10 @@ public class ClientDetailsDaoImpl implements ClientDetailsDao {
 		catch (Exception e) {
 			throw new ClientDaoException("unable to get clientname"+e.getMessage());
 		}
+		 finally {
+
+				InvestorDatabaseUtill.close(psta, con);
+			}
 		
 	}
 
@@ -393,7 +397,10 @@ public class ClientDetailsDaoImpl implements ClientDetailsDao {
            }
            catch (Exception e) {
    			throw new ClientDaoException("unable to delete"+e.getMessage());
-   		}
+   		} finally {
+
+			InvestorDatabaseUtill.close(psta, con);
+		}
    
 	}
 	public ArrayList<String> getAnalystAdminForClientName(String clientName, String dataBaseName) {

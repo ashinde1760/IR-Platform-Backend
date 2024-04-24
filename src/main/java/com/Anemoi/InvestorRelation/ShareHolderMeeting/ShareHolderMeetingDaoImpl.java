@@ -296,8 +296,8 @@ public class ShareHolderMeetingDaoImpl implements ShareHolderMeetingDao {
 			String shareholderid, String dataBaseName)  throws ShareHolderMeetingDaoException{
 		Connection connection = null;
 		PreparedStatement pstmt = null;
-		LOGGER.info(".in update shareholder meeting database name is ::" + dataBaseName + " holderId is ::" + shareholderid
-				+ " request shareholder meeting is ::" + shareholdermeeting);
+//		LOGGER.info(".in update shareholder meeting database name is ::" + dataBaseName + " holderId is ::" + shareholderid
+//				+ " request shareholder meeting is ::" + shareholdermeeting);
 
 		try {
 		

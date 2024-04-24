@@ -2,6 +2,8 @@ package com.Anemoi.InvestorRelation.FinancialRatio;
 
 import java.util.List;
 
+import org.owasp.encoder.Encode;
+
 import com.Anemoi.InvestorRelation.Configuration.ReadPropertiesFile;
 
 import io.micronaut.http.HttpResponse;
@@ -55,6 +57,9 @@ public class FinancialRatioController {
 	public List<FinancialRatioEntity> getDetails() throws FinancialRatioControllerException {
 		try {
 			List<FinancialRatioEntity> cashflowData = this.service.getAllFinancialRatioDetails();
+			 for (FinancialRatioEntity item : cashflowData) {
+		            item.setClientName(escapeHtml(item.getClientName())); // Properly escape HTML
+		        }
 			return cashflowData;
 		} catch (Exception e) {
 			// TODO: handle exception
@@ -64,7 +69,10 @@ public class FinancialRatioController {
 		}
 
 	}
-
+	 private static String escapeHtml(String input) {
+	        // Using OWASP Java Encoder
+	        return Encode.forHtmlContent(input);
+	    }
 
 	@Delete("/{financialid}")
 	public HttpResponse<FinancialRatioEntity> deleteUser(@PathVariable("financialid") String financialid)

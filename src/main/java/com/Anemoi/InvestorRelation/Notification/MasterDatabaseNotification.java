@@ -72,7 +72,7 @@ public class MasterDatabaseNotification {
  
     }
     
-    @Scheduled(cron = "0 11 11 * * ?") // Runs every day at 11:00 PM
+    @Scheduled(cron = "0 20 10 * * ?") // Runs every day at 11:00 PM
 	void sendLineItemNotification() throws MessagingException, UserModelServiceException {
 		Transport transport = null;
 		Date today = new Date();
@@ -92,16 +92,21 @@ public class MasterDatabaseNotification {
 		// Master database addition modification
 		ArrayList<CashFlowEntity> list = this.cashFlowService.getlineItemForToday(startTimestamp, endTimestamp);
 		if (!list.isEmpty()) {
+			System.out.println("check 1");
 			tablesName.add("Cash Flow");
 		}
 		ArrayList<BalanceSheetEntity> balanceList = this.balanceSheetService.getBalanceSheetLineItem(startTimestamp,
 				endTimestamp);
 		if (!balanceList.isEmpty()) {
+			System.out.println("check 2");
+
 			tablesName.add("Balance Sheet");
 		}
 		ArrayList<IncomeStatementEntity> incomelist = this.incomeStatementService
 				.getIncomesheetLineItems(startTimestamp, endTimestamp);
 		if (!incomelist.isEmpty()) {
+			System.out.println("check 3");
+
 			tablesName.add("Income Statement");
 		}
 		ArrayList<ShareHolderDataFromEntity> getCurrentDateData = this.dataFromService

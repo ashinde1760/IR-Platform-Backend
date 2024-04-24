@@ -15,6 +15,7 @@ import com.Anemoi.InvestorRelation.BalanceSheet.BalanceSheetServiceImpl;
 import com.Anemoi.InvestorRelation.CashFlow.CashFlowServiceException;
 import com.Anemoi.InvestorRelation.CashFlow.CashFlowServiceImpl;
 import com.Anemoi.InvestorRelation.Configuration.ReadPropertiesFile;
+import com.Anemoi.MailSession.MailService;
 
 import io.micronaut.http.multipart.CompletedFileUpload;
 import jakarta.inject.Inject;
@@ -29,6 +30,9 @@ public class ShareHolderDataFromServiceImpl implements ShareHoderDataFromService
 	
 	@Inject
 	private AuditHistoryService auditHistoryService;
+	
+	@Inject
+	private MailService mailService;
 
 	private static final Object STATUS = "status";
 	private static final Object SUCCESS = "success";
@@ -236,11 +240,11 @@ public class ShareHolderDataFromServiceImpl implements ShareHoderDataFromService
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public String uploadShareHolderDataExcelSheet(String createdBy,CompletedFileUpload file) throws ShareHolderDataFromServiceException {
+	public String uploadShareHolderDataExcelSheet(String createdBy,CompletedFileUpload file) throws ShareHolderDataFromServiceException, ClassNotFoundException {
 		try {
 			String dataBaseName = ShareHolderDataFromServiceImpl.dataBaseName();
 			String list=this.shareholderdataformdao.uploadShareHolderDataExcelSheet(createdBy,file, dataBaseName);
-		
+			
 			Date d=new Date();
 			AuditHistoryEntity entityAuditHistoryEntity=new AuditHistoryEntity();
 			entityAuditHistoryEntity.setCreatedBy(createdBy);
@@ -248,10 +252,18 @@ public class ShareHolderDataFromServiceImpl implements ShareHoderDataFromService
 			entityAuditHistoryEntity.setDescription("add shareholderData using template");
 			entityAuditHistoryEntity.setCreatedOn(d.getTime());
 			this.auditHistoryService.addAuditHistory(entityAuditHistoryEntity);
+			String status="success";
+			String region="no reason";
+				String msg="The 'Shareholder data' file which you have uploaded has processed successfully, kindly refresh the application and check.";
+			mailService.uploadShareHolderDataExcelSheetToSendMail(msg,createdBy,status,region);
 			
 			return list;
 		} catch (Exception e) {
 			// TODO: handle exception
+			String status="fail";
+			String region=e.getMessage();
+			String msg="The 'Shareholder data' file which you have uploaded has failed.";
+			mailService.uploadShareHolderDataExcelSheetNOTUploadToSendMail(msg,createdBy,status,region);
 			throw new ShareHolderDataFromServiceException(e.getMessage());
 		}
 	}

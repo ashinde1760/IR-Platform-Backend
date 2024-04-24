@@ -21,6 +21,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import org.apache.commons.io.FilenameUtils;
 import org.json.simple.JSONObject;
+import org.owasp.encoder.Encode;
 
 import com.Anemoi.InvestorRelation.Audithistory.AuditHistoryEntity;
 import com.Anemoi.InvestorRelation.Audithistory.AuditHistoryService;
@@ -258,6 +259,9 @@ public class ShareHolderMeetingController {
 	public List<ShareHolderMeetingEntity> getDetails() throws SQLException, ShareHolderMeetingControllerExcetion {
 		try {
 			List<ShareHolderMeetingEntity> shareholderData = this.service.getShareHolderMeetingDetails();
+			 for (ShareHolderMeetingEntity item : shareholderData) {
+		            item.setClientName(escapeHtml(item.getClientName())); // Properly escape HTML
+		        }
 			return shareholderData;
 		} catch (Exception e) {
 			// TODO: handle exception
@@ -267,7 +271,10 @@ public class ShareHolderMeetingController {
 		}
 
 	}
-
+	 private static String escapeHtml(String input) {
+	        // Using OWASP Java Encoder
+	        return Encode.forHtmlContent(input);
+	    }
 	@Patch("/{shareholderid}")
 	public HttpResponse<ShareHolderMeetingEntity> updateShareholder(
 			@Body ShareHolderMeetingEntity shareholdermeetingEntity,

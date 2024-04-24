@@ -22,7 +22,7 @@ public interface ShareHoderDataFromService {
 
 	ShareHolderDataFromEntity deleteShareHoderDataForm(String shareid) throws ShareHolderDataFromServiceException;
 
-	String uploadShareHolderDataExcelSheet(String createdBy,CompletedFileUpload file) throws ShareHolderDataFromServiceException;
+	String uploadShareHolderDataExcelSheet(String createdBy,CompletedFileUpload file) throws ShareHolderDataFromServiceException, ClassNotFoundException;
 
 	String addMinorCode(MinorCodeEntity codeEntity) throws ShareHolderDataFromServiceException;
 

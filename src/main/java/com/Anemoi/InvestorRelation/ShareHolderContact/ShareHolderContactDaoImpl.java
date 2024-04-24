@@ -195,8 +195,8 @@ public class ShareHolderContactDaoImpl implements ShareHolderContactDao {
 			String contactid, String dataBaseName) throws ShareHolderContactDaoException {
 		Connection connection = null;
 		PreparedStatement pstmt = null;
-		LOGGER.info(".in update shareholder contact database name is ::" + dataBaseName + " cashId is ::" + contactid
-				+ " request cash flow is ::" + shareholdercontact);
+//		LOGGER.info(".in update shareholder contact database name is ::" + dataBaseName + " cashId is ::" + contactid
+//				+ " request cash flow is ::" + shareholdercontact);
 
 		try {
 
@@ -258,6 +258,7 @@ public class ShareHolderContactDaoImpl implements ShareHolderContactDao {
 		try
 
 		{
+			connection = InvestorDatabaseUtill.getConnection();
 
 			DataFormatter formatter = new DataFormatter();
 			byte[] fileContent = file.getBytes();
@@ -372,7 +373,7 @@ public class ShareHolderContactDaoImpl implements ShareHolderContactDao {
 				Date d = new Date();
 				this.checkempty(name, poc);
 
-				connection = InvestorDatabaseUtill.getConnection();
+				
 
 				pstmt = connection.prepareStatement(ShareHolderContactQuaryConstant.INSERT_INTO_SHAREHOLDERCONTACT
 						.replace(ShareHolderContactQuaryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
@@ -496,6 +497,9 @@ public class ShareHolderContactDaoImpl implements ShareHolderContactDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return null;
 	}

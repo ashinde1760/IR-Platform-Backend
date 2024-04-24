@@ -66,6 +66,10 @@ public interface MailService {
 	void addclientlineItemnotification(String clientName, String email,
 			ArrayList<String> analystAdminForthisClient, Set<String> masterName);
 
+	void uploadShareHolderDataExcelSheetToSendMail(String msg,String createdBy,String status,String region) throws ClassNotFoundException;
+
+	void uploadShareHolderDataExcelSheetNOTUploadToSendMail(String msg, String createdBy, String status, String region);
+
 	
 
 	

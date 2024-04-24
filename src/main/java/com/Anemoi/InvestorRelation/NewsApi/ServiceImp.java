@@ -8,6 +8,8 @@ import java.net.URL;
 
 import org.json.JSONObject;
 
+import io.micronaut.context.ApplicationContext;
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 
@@ -15,13 +17,17 @@ import jakarta.inject.Singleton;
 @Singleton
 public class ServiceImp implements ServiceInterfce{
 
+	@Inject
+	ApplicationContext context;
+	
 	@Override
 	public String newsAPI(NewsEntity ne) throws IOException {
 		// TODO Auto-generated method stub
 		JSONObject jsonResponse=null;
 		try {
             
-            String apiKey = "8e9e6a3f925b4d84a56930a4b7344f02";
+            String apiKey = context.get("my.config.apiKey", String.class).orElse(null);
+
             String qnTitle=ne.getQnTilte();
             System.out.println(qnTitle);
             String from=ne.getFromDate();

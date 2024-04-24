@@ -175,8 +175,8 @@ public class RoleMoldeDaoImpl implements RoleModelDao {
 	public RoleModelEntity updateRoleModelDetails(RoleModelEntity rolemodel, String id, String dataBaseName) {
 		Connection connection = null;
 		PreparedStatement pstmt = null;
-		LOGGER.info(".in update rolemodel database name is ::" + dataBaseName + " cashId is ::" + id
-				+ " request role model is ::" + rolemodel);
+//		LOGGER.info(".in update rolemodel database name is ::" + dataBaseName + " cashId is ::" + id
+//				+ " request role model is ::" + rolemodel);
 
 		try {
 

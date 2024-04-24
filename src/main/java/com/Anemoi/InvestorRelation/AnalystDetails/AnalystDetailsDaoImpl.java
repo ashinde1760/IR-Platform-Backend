@@ -167,7 +167,10 @@ public class AnalystDetailsDaoImpl implements AnalystDetailsDao {
 
 	private AnalystDetailsEntity buildAnalystDeatils(ResultSet result, String dataBaseName)
 			throws SQLException, ClassNotFoundException {
-
+		Connection connection = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs =null;
+		try {
 		// TODO Auto-generated method stub
 		List<AnalystContactDetails> contactDetailsList = new ArrayList<>();
 		AnalystDetailsEntity analystentity = new AnalystDetailsEntity();
@@ -177,12 +180,12 @@ public class AnalystDetailsDaoImpl implements AnalystDetailsDao {
 		analystentity.setModifiedOn(result.getLong("modifiedOn"));
 		analystentity.setCreatedBy(result.getString("createdBy"));
 		analystentity.setModifiedBy(result.getString("modifiedBy"));
-		Connection connection = InvestorDatabaseUtill.getConnection();
-		PreparedStatement psta = connection
+		 connection = InvestorDatabaseUtill.getConnection();
+		 pstmt = connection
 				.prepareStatement(AnalystDetailsQueryConstant.SELECT_ANALYSTCONTACTDETIALS_BYID
 						.replace(AnalystDetailsQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-		psta.setLong(1, analystentity.getAnalystId());
-		ResultSet rs = psta.executeQuery();
+		 pstmt.setLong(1, analystentity.getAnalystId());
+		 rs = pstmt.executeQuery();
 		while (rs.next()) {
 			AnalystContactDetails d = new AnalystContactDetails();
 			d.setAnalystcontactid(rs.getLong("analystcontactid"));
@@ -192,8 +195,16 @@ public class AnalystDetailsDaoImpl implements AnalystDetailsDao {
 
 		}
 		analystentity.setAnalystContactDetails(contactDetailsList);
+		return  analystentity;
+		}catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally {
 
-		return analystentity;
+			InvestorDatabaseUtill.close(rs, pstmt, connection);		}
+		return null;
+		
 
 	}
 

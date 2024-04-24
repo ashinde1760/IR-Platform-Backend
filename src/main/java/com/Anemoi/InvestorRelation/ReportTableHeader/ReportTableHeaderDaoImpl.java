@@ -20,7 +20,7 @@ public class ReportTableHeaderDaoImpl implements ReportTableHeaderDao {
 	public ReportTableHeaderEntity addReportTableHeader(ReportTableHeaderEntity entity, String dataBaseName)
 			throws ReportTableHeaderDaoException {
 		Connection con = null;
-		PreparedStatement preparedStatement;
+		PreparedStatement preparedStatement=null;
 		try {
 			con = InvestorDatabaseUtill.getConnection();
 			preparedStatement = con.prepareStatement(ReportTableHeaderQueryConstant.INSERT_INTO_REPORTTABLE_HEADERTABLE
@@ -38,6 +38,9 @@ public class ReportTableHeaderDaoImpl implements ReportTableHeaderDao {
 			return entity;
 		} catch (Exception e) {
 			throw new ReportTableHeaderDaoException("unable to add" + e.getMessage());
+		}finally {
+
+			InvestorDatabaseUtill.close(preparedStatement, con);
 		}
 
 	}
@@ -62,6 +65,9 @@ public class ReportTableHeaderDaoImpl implements ReportTableHeaderDao {
 			return list;
 		} catch (Exception e) {
 			throw new ReportTableHeaderDaoException("unable to get" + e.getMessage());
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 	}
 
@@ -94,6 +100,9 @@ public class ReportTableHeaderDaoImpl implements ReportTableHeaderDao {
 		} catch (Exception e) {
 
 			throw new ReportTableHeaderDaoException("unable to get table header by id" + e.getMessage());
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return null;
 	}
@@ -122,6 +131,9 @@ public class ReportTableHeaderDaoImpl implements ReportTableHeaderDao {
 			}
 		} catch (Exception e) {
 			throw new ReportTableHeaderDaoException("unable to add" + e.getMessage());
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return entityObject;
 
@@ -142,6 +154,9 @@ public class ReportTableHeaderDaoImpl implements ReportTableHeaderDao {
 
 			throw new ReportTableHeaderDaoException("unable to delete" + e.getMessage());
 
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 
 	}
@@ -166,6 +181,9 @@ public class ReportTableHeaderDaoImpl implements ReportTableHeaderDao {
 
 			throw new ReportTableHeaderDaoException("unable to update" + e.getMessage());
 
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 	}
 

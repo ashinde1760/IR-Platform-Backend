@@ -117,7 +117,22 @@ public class UserServiceImpl implements UserService {
 					nentity.setCreatedOn(date.getTime());
 					this.notificationService.addNotificationHistory(nentity);
 				}
-				
+				else if (user.getRoleName().equalsIgnoreCase("Client Admin"))
+				{
+					
+					ArrayList<String> emailList = this.userdao.getAllEmailForClientAdmin(user, dataBaseName);
+
+					mailService.updateAnalystAdminmailtoAnalsytAdminAndAllMasterAdmins( user, emailList);
+
+					//notification code
+					emailList.add(user.getEmail());
+					Date date=new Date();
+					NotificationEntity nentity=new NotificationEntity();
+					nentity.setMessage("Modification of Analyst Admin");
+					nentity.setUsers(emailList);
+					nentity.setCreatedOn(date.getTime());
+					this.notificationService.addNotificationHistory(nentity);
+				}
 				
 			}
 			else if(role.equalsIgnoreCase("Analyst Admin"))
@@ -326,6 +341,22 @@ public class UserServiceImpl implements UserService {
 				{
 					
 					ArrayList<String> emailList = this.userdao.getAllEmailForMasterAdmin(user, dataBaseName);
+
+					mailService.updateAnalystAdminmailtoAnalsytAdminAndAllMasterAdmins( user, emailList);
+
+					//notification code
+					emailList.add(user.getEmail());
+					Date date=new Date();
+					NotificationEntity nentity=new NotificationEntity();
+					nentity.setMessage("Modification of Analyst Admin");
+					nentity.setUsers(emailList);
+					nentity.setCreatedOn(date.getTime());
+					this.notificationService.addNotificationHistory(nentity);
+				}
+				else if (getUserDetails.getRoleName().equalsIgnoreCase("Client Admin"))
+				{
+					
+					ArrayList<String> emailList = this.userdao.getAllEmailForClientAdmin(user, dataBaseName);
 
 					mailService.updateAnalystAdminmailtoAnalsytAdminAndAllMasterAdmins( user, emailList);
 

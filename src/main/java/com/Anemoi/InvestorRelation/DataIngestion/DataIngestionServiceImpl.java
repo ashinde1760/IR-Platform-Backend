@@ -45,20 +45,19 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 
 	@Inject
 	DataIngestionDao dataIngestionDao;
-	
+
 	@Inject
 	private AuditHistoryService auditHistoryService;
-	
+
 	@Inject
 	private MailService mailService;
-	
+
 	@Inject
 	private MeetingDao meetingDao;
-	
+
 	@Inject
 	private NotificationService notificationService;
-	
-	
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(DataIngestionServiceImpl.class);
 
 	private static final Object STATUS = "status";
@@ -76,6 +75,7 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 		return DATABASENAME;
 
 	}
+
 	@Override
 	public ArrayList<TableList> getTableIdByFileId(long fileId) throws DataIngestionServiceException {
 		// TODO Auto-generated method stub
@@ -150,22 +150,21 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 		// TODO Auto-generated method stub
 		try {
 			String dataBaseName = DataIngestionServiceImpl.dataBaseName();
-			String createdBy=null;
+			String createdBy = null;
 			ArrayList<DataIngestionMappingModel> mappingModel = this.dataIngestionDao
 					.addDataIngestionMappingTableData(dataIngestionMappingTable, dataBaseName);
-			for(DataIngestionMappingModel m:mappingModel)
-			{
-				createdBy=m.getCreatedBy();
+			for (DataIngestionMappingModel m : mappingModel) {
+				createdBy = m.getCreatedBy();
 			}
-			
-			java.util.Date d=new java.util.Date();
-			AuditHistoryEntity entity=new AuditHistoryEntity();
+
+			java.util.Date d = new java.util.Date();
+			AuditHistoryEntity entity = new AuditHistoryEntity();
 			entity.setCreatedBy(createdBy);
 			entity.setActivity("File mapping");
 			entity.setDescription("file Mapping in dataIngestion module");
 			entity.setCreatedOn(d.getTime());
 			this.auditHistoryService.addAuditHistory(entity);
-			
+
 			return mappingModel;
 
 		} catch (Exception e) {
@@ -266,10 +265,11 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public String uploadExcelSheetBytableId(CompletedFileUpload file, long tableId) throws DataIngestionServiceException {
+	public String uploadExcelSheetBytableId(CompletedFileUpload file, long tableId)
+			throws DataIngestionServiceException {
 
 		try {
-		
+
 			String dataBaseName = DataIngestionServiceImpl.dataBaseName();
 			this.dataIngestionDao.uploadExcelSheet(file, tableId, dataBaseName);
 			JSONObject reposneJSON = new JSONObject();
@@ -279,7 +279,7 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 		} catch (Exception e) {
 			throw new DataIngestionServiceException(e.getMessage());
 		}
-		
+
 	}
 
 	@SuppressWarnings("unchecked")
@@ -486,100 +486,90 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 //		}
 //	}
 
-
-
 	@SuppressWarnings({ "unchecked", "resource" })
 	@Override
-	public ArrayList<NonProcessFilesDetails> saveMultipleFiles(ArrayList<NonProcessFilesDetails> modelList, NonProcessFilesDetails details)
-			throws DataIngestionServiceException, ClassNotFoundException {
+	public ArrayList<NonProcessFilesDetails> saveMultipleFiles(ArrayList<NonProcessFilesDetails> modelList,
+			NonProcessFilesDetails details) throws DataIngestionServiceException, ClassNotFoundException {
 		// TODO Auto-generated method stub
-		Connection	connection=null;
-		PreparedStatement psta=null;
-		ResultSet rs=null;
-		
-		  ArrayList<String > existingHashcodes=new ArrayList<>();
-		  ArrayList<NonProcessFilesDetails> list=new ArrayList<>();
-		  ArrayList<NonProcessFilesDetails> filesFoundlist=new ArrayList<>();
-			connection = InvestorDatabaseUtill.getConnection();
-			int count =0;
-		
-			try {
-				String dataBaseName = DataIngestionServiceImpl.dataBaseName();
-				Iterator ir = modelList.iterator();
-			    String hashString =null;
-			 
-				while (ir.hasNext()) 
-				{
-					NonProcessFilesDetails model = (NonProcessFilesDetails) ir.next();
-					 MessageDigest md = MessageDigest.getInstance("MD5");
-				        byte[] hashBytes = md.digest(model.getFileData());
-				        BigInteger hashInt = new BigInteger(1, hashBytes);
-				         hashString = hashInt.toString(16);
-				        model.setHashCode(hashString);
-						psta = connection.prepareStatement(DataIngestionQueryConstant.SELECT_HASHCODE
-								.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-						rs=psta.executeQuery();
-						while(rs.next())
-						{
-						  String code=rs.getString("hashCode");
-						  existingHashcodes.add(code);
-						}
-			
-				        if (!existingHashcodes.contains(hashString)) 
-				        {
-				        	System.out.println("file not present in database");
-				        	count++;
-//				        	model.setClient(details.getClient());
-				        	NonProcessFilesDetails modelsave=this.dataIngestionDao.saveMultipleFiles(model,dataBaseName);
-				        	        	
-				        }
-				        else
-				        {
-				        	System.out.println("file are present in database");
-				        	System.out.println("fileName"+model.getClientId());
-				        	psta = connection.prepareStatement(DataIngestionQueryConstant.SELECT_NPFILEID
-									.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-				        	psta.setString(1, hashString);
-							rs=psta.executeQuery();
-							while(rs.next())
-							{
-								int npFileId2=rs.getInt("npFileId");
-								model.setNpFileId(npFileId2);
-							}
-							
-				        	list.add(model);
-				        }
-				    
+		Connection connection = null;
+		PreparedStatement psta = null;
+		ResultSet rs = null;
+
+		ArrayList<String> existingHashcodes = new ArrayList<>();
+		ArrayList<NonProcessFilesDetails> list = new ArrayList<>();
+		ArrayList<NonProcessFilesDetails> filesFoundlist = new ArrayList<>();
+		connection = InvestorDatabaseUtill.getConnection();
+		int count = 0;
+
+		try {
+			String dataBaseName = DataIngestionServiceImpl.dataBaseName();
+			Iterator ir = modelList.iterator();
+			String hashString = null;
+
+			while (ir.hasNext()) {
+				NonProcessFilesDetails model = (NonProcessFilesDetails) ir.next();
+				System.out.println("filename:=> "+model.getFileName());
+				MessageDigest md = MessageDigest.getInstance("SHA-256");
+				byte[] hashBytes = md.digest(model.getFileData());
+				BigInteger hashInt = new BigInteger(1, hashBytes);
+				hashString = hashInt.toString(16);
+				model.setHashCode(hashString);
+				psta = connection.prepareStatement(DataIngestionQueryConstant.SELECT_HASHCODE
+						.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+
+				psta.setString(1, details.getClient());
+				rs = psta.executeQuery();
+				while (rs.next()) {
+					String code = rs.getString("fileName");
+					System.out.println("existing file: "+rs.getString("fileName"));
+					existingHashcodes.add(code);
 				}
-			if(count>0)
-			{
-					java.util.Date d=new java.util.Date();
-	          System.out.println("count "+count);
-				AuditHistoryEntity entity=new AuditHistoryEntity();
+
+				if (!existingHashcodes.contains(model.getFileName())) {
+					System.out.println("file not present in database");
+					count++;
+//				        	model.setClient(details.getClient());
+					NonProcessFilesDetails modelsave = this.dataIngestionDao.saveMultipleFiles(model, dataBaseName);
+
+				} else {
+					System.out.println("file are present in database");
+					System.out.println("fileName" + model.getClientId());
+					psta = connection.prepareStatement(DataIngestionQueryConstant.SELECT_NPFILEID
+							.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+					psta.setString(1, model.getFileName());
+					psta.setString(2, details.getClient().trim());
+					rs = psta.executeQuery();
+					while (rs.next()) {
+						int npFileId2 = rs.getInt("npFileId");
+						model.setNpFileId(npFileId2);
+					}
+
+					list.add(model);
+				}
+
+			}
+			if (count > 0) {
+				java.util.Date d = new java.util.Date();
+				System.out.println("count " + count);
+				AuditHistoryEntity entity = new AuditHistoryEntity();
 				entity.setCreatedBy(details.getCreatedBy());
 				entity.setActivity("File Upload");
-				entity.setDescription(count+" " +"files has uploaded");
+				entity.setDescription(count + " " + "files has uploaded");
 				entity.setCreatedOn(d.getTime());
 				this.auditHistoryService.addAuditHistory(entity);
-			}else
-			{
+			} else {
 				System.out.println("skip");
 			}
-				
-				return list;
-			
-				
 
-			} catch (Exception e) {
+			return list;
 
-				throw new DataIngestionServiceException(e.getMessage());
-			}
-			 finally {
-					LOGGER.info("closing the connections");
-					InvestorDatabaseUtill.close(psta, connection);
-				}
+		} catch (Exception e) {
 
-		
+			throw new DataIngestionServiceException(e.getMessage());
+		} finally {
+			LOGGER.info("closing the connections");
+			InvestorDatabaseUtill.close(psta, connection);
+		}
 
 	}
 
@@ -595,7 +585,6 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 			throw new DataIngestionServiceException(e.getMessage());
 		}
 	}
-
 
 	@Override
 	public HttpResponse<DataIngestionModel> getPreviewForNonProcessFiles(int npFileId,
@@ -626,87 +615,80 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 	public HttpResponse<DataIngestionModel> savePreviewFileDetailsInTable(int npFileId,
 			DataIngestionModel ingestionModel) throws DataIngestionServiceException {
 //		Transport transport = null;
-		try 
-		{
-		
+		try {
+
 			String dataBaseName = DataIngestionServiceImpl.dataBaseName();
-			
-			
-			java.util.Date d=new java.util.Date();
-			AuditHistoryEntity entity=new AuditHistoryEntity();
+
+			java.util.Date d = new java.util.Date();
+			AuditHistoryEntity entity = new AuditHistoryEntity();
 			entity.setCreatedBy(ingestionModel.getCreatedBy());
 			entity.setActivity("File Configured");
 			entity.setDescription("File has Configured Successfully");
 			entity.setCreatedOn(d.getTime());
-			
-			if (ingestionModel.getPagenumbers().equalsIgnoreCase("All"))
-			{
+
+			if (ingestionModel.getPagenumbers().equalsIgnoreCase("All")) {
 				// direct get the file from nonprocess table and save in dataingestion table
 				System.out.println("save all file in table");
 				DataIngestionModel dataIngestionModel = this.dataIngestionDao.savePreviewFileForAllPages(npFileId,
 						ingestionModel, dataBaseName);
-				
+
 				this.auditHistoryService.addAuditHistory(entity);
-				
-				ArrayList<ClientDetailsEntity> analystAdminList=this.meetingDao.getAnalsytAdminByClientName(ingestionModel.getClient(),dataBaseName);
-			    List<String> clientAdmins=new ArrayList<>();
-			    List<String> analystAdmins=new ArrayList<>();
+
+				ArrayList<ClientDetailsEntity> analystAdminList = this.meetingDao
+						.getAnalsytAdminByClientName(ingestionModel.getClient(), dataBaseName);
+				List<String> clientAdmins = new ArrayList<>();
+				List<String> analystAdmins = new ArrayList<>();
 				for (ClientDetailsEntity client : analystAdminList) {
 					clientAdmins.addAll(client.getEmailId());
 					analystAdmins.addAll(client.getAssignAA());
 				}
-			
-				mailService.uploadFileMailSendToClientAdminCCAnalystAdmin(ingestionModel,clientAdmins,analystAdmins);
-				
-				//notification code
-				List<String> ea=new ArrayList<>();
+
+				mailService.uploadFileMailSendToClientAdminCCAnalystAdmin(ingestionModel, clientAdmins, analystAdmins);
+
+				// notification code
+				List<String> ea = new ArrayList<>();
 				ea.addAll(clientAdmins);
 				ea.addAll(analystAdmins);
-				NotificationEntity e=new NotificationEntity();
+				NotificationEntity e = new NotificationEntity();
 				e.setMessage("New File updated");
 				e.setUsers(ea);
 				e.setCreatedOn(d.getTime());
 				this.notificationService.addNotificationHistory(e);
-				
+
 				return HttpResponse.status(HttpStatus.OK).body(dataIngestionModel);
-			} 
-			else {
+			} else {
 				// get the file from non process table and split this file and save in
 				// dataingestion table
 				System.out.println("save preview for splited pages");
 				DataIngestionModel model = this.dataIngestionDao.savePreviewFileForSplited(npFileId, ingestionModel,
 						dataBaseName);
-				
+
 				this.auditHistoryService.addAuditHistory(entity);
-				
-				ArrayList<ClientDetailsEntity> analystAdminList=this.meetingDao.getAnalsytAdminByClientName(ingestionModel.getClient(),dataBaseName);
-			    List<String> clientAdmins=new ArrayList<>();
-			    List<String> analystAdmins=new ArrayList<>();
+
+				ArrayList<ClientDetailsEntity> analystAdminList = this.meetingDao
+						.getAnalsytAdminByClientName(ingestionModel.getClient(), dataBaseName);
+				List<String> clientAdmins = new ArrayList<>();
+				List<String> analystAdmins = new ArrayList<>();
 				for (ClientDetailsEntity client : analystAdminList) {
 					clientAdmins.addAll(client.getEmailId());
 					analystAdmins.addAll(client.getAssignAA());
 				}
-			
-				mailService.uploadFileMailSendToClientAdminCCAnalystAdmin(ingestionModel,clientAdmins,analystAdmins);
-				
-				
-				//notification code
-				List<String> ea=new ArrayList<>();
+
+				mailService.uploadFileMailSendToClientAdminCCAnalystAdmin(ingestionModel, clientAdmins, analystAdmins);
+
+				// notification code
+				List<String> ea = new ArrayList<>();
 				ea.addAll(clientAdmins);
 				ea.addAll(analystAdmins);
-				NotificationEntity e=new NotificationEntity();
+				NotificationEntity e = new NotificationEntity();
 				e.setMessage("New File updated");
 				e.setUsers(ea);
 				e.setCreatedOn(d.getTime());
 				this.notificationService.addNotificationHistory(e);
-				
+
 				return HttpResponse.status(HttpStatus.OK).body(model);
 			}
-	
-		
-			
-			
-		
+
 		} catch (Exception e) {
 
 			throw new DataIngestionServiceException(e.getMessage());
@@ -734,19 +716,38 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 	public String overwriteFile(NonProcessFilesDetails file) throws DataIngestionServiceException {
 		Connection con = null;
 		PreparedStatement psta = null;
-		long fileId=0;
+		long fileId = 0;
 		try {
 			String dataBaseName = DataIngestionServiceImpl.dataBaseName();
 			con = InvestorDatabaseUtill.getConnection();
 			psta = con.prepareStatement(DataIngestionQueryConstant.SELECT_FILEID_OVERWRITE
 					.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
-			psta.setInt(1,file.getNpFileId());
-			ResultSet rs=psta.executeQuery();
-			while(rs.next())
-			{
-				fileId=rs.getLong("fileId");
+			psta.setInt(1, file.getNpFileId());
+			ResultSet rs = psta.executeQuery();
+			while (rs.next()) {
+				fileId = rs.getLong("fileId");
 			}
-
+			
+			psta = con.prepareStatement(DataIngestionQueryConstant.SELECT_FIELD_ID
+					.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+			psta.setLong(1, fileId);
+			ResultSet rs1 = psta.executeQuery();
+			String tableId=null;
+			while (rs1.next()) {
+				tableId=rs1.getString("tableId");
+			}
+			
+			
+			psta = con.prepareStatement(DataIngestionQueryConstant.DELETE_DATAINGESTION_MAPPING_TABLE
+					.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+			psta.setLong(1, fileId);
+			psta.executeUpdate();
+			
+			psta = con.prepareStatement(DataIngestionQueryConstant.DELETE_DATAINGESTION_TBALE_METADATA
+					.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+			psta.setLong(1, fileId);
+			psta.executeUpdate();
+			
 			psta = con.prepareStatement(DataIngestionQueryConstant.DELETE_NONPROCESS_FILEID
 					.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
 			psta.setInt(1, file.getNpFileId());
@@ -763,8 +764,8 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 					.replace(DataIngestionQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
 			psta.setLong(1, fileId);
 			psta.executeUpdate();
-			
-		this.dataIngestionDao.saveMultipleFiles(file,dataBaseName);
+
+			this.dataIngestionDao.saveMultipleFiles(file, dataBaseName);
 //			saveDataIngestion(dataIngestionModel, file);
 			JSONObject reposneJSON = new JSONObject();
 			reposneJSON.put(STATUS, SUCCESS);
@@ -773,62 +774,58 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 		} catch (Exception e) {
 			// TODO: handle exception
 			throw new DataIngestionServiceException("unable to add " + e.getMessage());
+		} finally {
+			LOGGER.info("closing the connections");
+			InvestorDatabaseUtill.close(psta, con);
 		}
-		 finally {
-				LOGGER.info("closing the connections");
-				InvestorDatabaseUtill.close(psta, con);
-			}
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public String overWriteMultipleFiles(ArrayList<NonProcessFilesDetails> nonProcessFilesList)
 			throws DataIngestionServiceException {
-		int count=0;
-		String createdBy=null;
-		try
-		{
-			Iterator<NonProcessFilesDetails> ir=nonProcessFilesList.iterator();
-			while(ir.hasNext())
-			{
+		int count = 0;
+		String createdBy = null;
+		try {
+			Iterator<NonProcessFilesDetails> ir = nonProcessFilesList.iterator();
+			while (ir.hasNext()) {
 				count++;
-				NonProcessFilesDetails nonprocessfile=(NonProcessFilesDetails)ir.next();
-				createdBy=nonprocessfile.getCreatedBy();
-			this.overwriteFile(nonprocessfile);
-			
+				NonProcessFilesDetails nonprocessfile = (NonProcessFilesDetails) ir.next();
+				createdBy = nonprocessfile.getCreatedBy();
+				this.overwriteFile(nonprocessfile);
+
 			}
-			System.out.println("count"+count);
-			java.util.Date d=new java.util.Date();
-			AuditHistoryEntity entity=new AuditHistoryEntity();
+			System.out.println("count" + count);
+			java.util.Date d = new java.util.Date();
+			AuditHistoryEntity entity = new AuditHistoryEntity();
 			entity.setCreatedBy(createdBy);
 			entity.setActivity("File Overwrite");
-			entity.setDescription(count+" " + "files overwrite successfully");
+			entity.setDescription(count + " " + "files overwrite successfully");
 			entity.setCreatedOn(d.getTime());
 			this.auditHistoryService.addAuditHistory(entity);
-			
+
 			JSONObject reposneJSON = new JSONObject();
 			reposneJSON.put(STATUS, SUCCESS);
 			reposneJSON.put(MSG, "file overwrite successfully");
 			return reposneJSON.toString();
-		}catch (Exception e) {
+		} catch (Exception e) {
 			// TODO: handle exception
-			throw new DataIngestionServiceException( e.getMessage());
+			throw new DataIngestionServiceException(e.getMessage());
 		}
-	
+
 	}
 
 	@Override
 	public ArrayList<NonProcessFilesDetails> getNonProcessingFiles() throws DataIngestionServiceException {
-               try
-               {
-		String dataBaseName = DataIngestionServiceImpl.dataBaseName();
-		ArrayList<NonProcessFilesDetails> reponseList=this.dataIngestionDao.getnonProcessFiles(dataBaseName);
-		return reponseList;
-               }
-               catch (Exception e) {
-            		throw new DataIngestionServiceException( e.getMessage());
-			}
+		try {
+			String dataBaseName = DataIngestionServiceImpl.dataBaseName();
+			ArrayList<NonProcessFilesDetails> reponseList = this.dataIngestionDao.getnonProcessFiles(dataBaseName);
+			return reponseList;
+		} catch (Exception e) {
+			throw new DataIngestionServiceException(e.getMessage());
+		}
 	}
+
 	@Override
 	public ArrayList<DataIngestionMappingModel> getPreviewDataIngestionMappingTable(
 			ArrayList<DataIngestionMappingModel> dataIngestionMappingTable) throws DataIngestionServiceException {
@@ -845,7 +842,5 @@ public class DataIngestionServiceImpl implements DataIngestionService {
 					"unable to get priview dataingestion mapping data in table " + e.getMessage());
 		}
 	}
-
-	
 
 }

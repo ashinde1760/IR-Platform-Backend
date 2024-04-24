@@ -3,6 +3,7 @@ package com.Anemoi.InvestorRelation.RoleModel;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.owasp.encoder.Encode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +78,9 @@ public class RoleModelController {
 	public List<RoleModelEntity> getDetails() throws SQLException, RoleModelControllerException {
 		try {
 			List<RoleModelEntity> shareholdercontact = this.service.getAllRoleModelDetails();
+			 for (RoleModelEntity item : shareholdercontact) {
+		            item.setRoleName(escapeHtml(item.getRoleName())); // Properly escape HTML
+		        }
 			return shareholdercontact;
 		} catch (Exception e) {
 			// TODO: handle exception
@@ -86,7 +90,10 @@ public class RoleModelController {
 		}
 
 	}
-
+	 private static String escapeHtml(String input) {
+	        // Using OWASP Java Encoder
+	        return Encode.forHtmlContent(input);
+	    }
 	@Patch("/{id}")
 	public HttpResponse<RoleModelEntity> updateRoleModel(@Body RoleModelEntity rolemodelEntity,
 			@PathVariable("id") String id) throws RoleModelControllerException {

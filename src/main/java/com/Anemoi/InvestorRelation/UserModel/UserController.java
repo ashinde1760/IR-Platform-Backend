@@ -4,6 +4,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.owasp.encoder.Encode;
+
 import com.Anemoi.InvestorRelation.Audithistory.AuditHistoryEntity;
 import com.Anemoi.InvestorRelation.Configuration.ReadPropertiesFile;
 import com.Anemoi.InvestorRelation.NotificationHistory.NotificationEntity;
@@ -58,7 +60,10 @@ public class UserController {
 	public List<UserEntity> getAllUser() throws UserModelControllerException {
 		try {
 			List<UserEntity> getuser = this.userservice.getAllUsers();
-			return getuser;
+			for (UserEntity item : getuser) {
+	            item.setFirstName(escapeHtml(item.getFirstName())); // Properly escape HTML
+	        }
+		return getuser;
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
@@ -67,7 +72,10 @@ public class UserController {
 		}
 
 	}
-
+	 private static String escapeHtml(String input) {
+	        // Using OWASP Java Encoder
+	        return Encode.forHtmlContent(input);
+	    }
 	@Patch("/{userid}")
 	public HttpResponse<UserEntity> updateUser(@Body UserEntity user, @PathVariable("userid") String userid)
 			throws UserModelControllerException {

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.simple.JSONObject;
-
+import org.owasp.encoder.Encode;
 import com.Anemoi.InvestorRelation.AnalystDetails.AnalystDetailsControllerException;
 import com.Anemoi.InvestorRelation.BalanceSheet.BalanceSheetControllerException;
 import com.Anemoi.InvestorRelation.BalanceSheet.BalanceSheetEntity;
@@ -90,6 +90,9 @@ public class AnalystLineItemController {
 	public List<AnalystLineItemEntity> getAnalystLineItem() throws AnalystLineItemControllerException {
 		try {
 			List<AnalystLineItemEntity> analystlineitem = this.analystlineitemservice.getAllAnalystLineItemDetails();
+			 for (AnalystLineItemEntity item : analystlineitem) {
+		            item.setAnalystLineItemName(escapeHtml(item.getAnalystLineItemName())); // Properly escape HTML
+		        }
 			return analystlineitem;
 		} catch (Exception e) {
 			// TODO: handle exception
@@ -100,6 +103,10 @@ public class AnalystLineItemController {
 
 	}
 
+	 private static String escapeHtml(String input) {
+	        // Using OWASP Java Encoder
+		  return Encode.forHtmlContent(input);
+	  }
 	@Get("/{analystName}/{masterTableSource}")
 	public ArrayList<AnalystLineItemEntity> getbyAnalystName(@PathVariable("analystName") String analystName,
 			@PathVariable("masterTableSource") String masterTableSource) throws AnalystLineItemControllerException {

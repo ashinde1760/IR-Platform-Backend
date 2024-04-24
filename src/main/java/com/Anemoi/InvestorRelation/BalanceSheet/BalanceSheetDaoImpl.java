@@ -178,8 +178,8 @@ public class BalanceSheetDaoImpl implements BalanceSheetDao {
 		PreparedStatement pstmt = null;
 		List<String> existingValues = new ArrayList<>();
 		List<String> valueSame = new ArrayList<>();
-		LOGGER.info(".in update balance sheet database name is ::" + dataBaseName + " incomeId is ::" + balanceid
-				+ " request balance sheet is ::" + balanceEntity);
+//		LOGGER.info(".in update balance sheet database name is ::" + dataBaseName + " incomeId is ::" + balanceid
+//				+ " request balance sheet is ::" + balanceEntity);
 
 		try {
 
@@ -484,6 +484,10 @@ public class BalanceSheetDaoImpl implements BalanceSheetDao {
 			// TODO: handle exception
 			e.printStackTrace();
 		}
+		 finally {
+
+				InvestorDatabaseUtill.close(psta, con);
+			}
 		return null;
 	}
 	

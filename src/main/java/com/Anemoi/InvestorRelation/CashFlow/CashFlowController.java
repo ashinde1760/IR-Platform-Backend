@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.simple.JSONObject;
+import org.owasp.encoder.Encode;
 
 import com.Anemoi.InvestorRelation.Configuration.ReadPropertiesFile;
 import com.Anemoi.InvestorRelation.IncomeStatement.IncomeStatementControllerException;
@@ -70,6 +71,9 @@ public class CashFlowController {
 	public List<CashFlowEntity> getDetails() throws CashFlowControllerException {
 		try {
 			List<CashFlowEntity> cashflowData = this.service.getAllCashFlowDetails();
+			 for (CashFlowEntity item : cashflowData) {
+		            item.setAlternativeName(escapeHtml(item.getAlternativeName())); // Properly escape HTML
+		        }
 			return cashflowData;
 		} catch (Exception e) {
 			// TODO: handle exception
@@ -79,7 +83,10 @@ public class CashFlowController {
 		}
 
 	}
-
+	 private static String escapeHtml(String input) {
+	        // Using OWASP Java Encoder
+	        return Encode.forHtmlContent(input);
+	    }
 	@Patch("/{cashid}")
 	public HttpResponse<CashFlowEntity> updateCashFlow(@Body CashFlowEntity cashflow,
 			@PathVariable("cashid") String cashid) throws CashFlowControllerException {

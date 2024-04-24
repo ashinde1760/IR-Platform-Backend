@@ -3,8 +3,12 @@ package com.Anemoi.InvestorRelation.ShareHolderDataFrom;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.json.simple.JSONObject;
+import org.owasp.encoder.Encode;
 
 import com.Anemoi.InvestorRelation.CashFlow.CashFlowControllerException;
 import com.Anemoi.InvestorRelation.Configuration.ReadPropertiesFile;
@@ -22,6 +26,7 @@ import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.multipart.CompletedFileUpload;
+import io.micronaut.scheduling.annotation.Async;
 import jakarta.inject.Inject;
 import reactor.core.publisher.Mono;
 
@@ -35,6 +40,9 @@ public class ShareHolderDataFromController {
 	private static final Object SUCCESS = "success";
 	private static final Object MSG = "msg";
 
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10); // Adjust the number of threads as needed
+
+	
 	@Post("/add")
 	public HttpResponse<ShareHolderDataFromEntity> addshareholderdataformDetails(
 			@Body ShareHolderDataFromEntity shareholderEntity)
@@ -71,6 +79,9 @@ public class ShareHolderDataFromController {
 	public List<ShareHolderDataFromEntity> getDetails() throws SQLException, ShareHolderDataFormControllerException {
 		try {
 			List<ShareHolderDataFromEntity> shareholderData = this.shareholderservice.getShareHolderDataFormDetails();
+			 for (ShareHolderDataFromEntity item : shareholderData) {
+		            item.setClientName(escapeHtml(item.getClientName())); // Properly escape HTML
+		        }
 			return shareholderData;
 		} catch (Exception e) {
 			// TODO: handle exception
@@ -80,7 +91,10 @@ public class ShareHolderDataFromController {
 		}
 
 	}
-
+	 private static String escapeHtml(String input) {
+	        // Using OWASP Java Encoder
+	        return Encode.forHtmlContent(input);
+	    }
 	@Patch("/{shareid}")
 	public HttpResponse<ShareHolderDataFromEntity> updateshareholder(@Body ShareHolderDataFromEntity shareholderEntity,
 			@PathVariable("shareid") String shareid) throws ShareHolderDataFormControllerException {
@@ -111,23 +125,64 @@ public class ShareHolderDataFromController {
 		}
 
 	}
+//	@Async
+//	@SuppressWarnings("unchecked")
+//	@Post(uri = "/uploadShareholderDataExcelSheet", consumes = { MediaType.APPLICATION_JSON, MediaType.MULTIPART_FORM_DATA })
+//	public void uploadExcelSheetshareHolderData(  @QueryValue String createdBy,
+//            @Part("file") CompletedFileUpload file)
+//			throws ShareHolderDataFormControllerException {
+//		try {
+//		
+//			String response = this.shareholderservice.uploadShareHolderDataExcelSheet(createdBy,file);
+////			return response;
+//		} catch (Exception e) {
+//			// TODO: handle exception
+//			throw new ShareHolderDataFormControllerException(ReadPropertiesFile.readResponseProperty("101"), e, 400,
+//					e.getMessage());
+//		}
+//	}
 	
-	@SuppressWarnings("unchecked")
-	@Post(uri = "/uploadShareholderDataExcelSheet", consumes = { MediaType.APPLICATION_JSON, MediaType.MULTIPART_FORM_DATA })
-	public String uploadExcelSheetshareHolderData(  @QueryValue String createdBy,
-            @Part("file") CompletedFileUpload file)
-			throws ShareHolderDataFormControllerException {
-		try {
-		
-			String response = this.shareholderservice.uploadShareHolderDataExcelSheet(createdBy,file);
-			return response;
-		} catch (Exception e) {
-			// TODO: handle exception
-			throw new ShareHolderDataFormControllerException(ReadPropertiesFile.readResponseProperty("101"), e, 400,
-					e.getMessage());
-		}
-	}
+//	@SuppressWarnings("unchecked")
+//	@Post(uri = "/uploadShareholderDataExcelSheet", consumes = { MediaType.APPLICATION_JSON, MediaType.MULTIPART_FORM_DATA })
+//	public String uploadExcelSheetshareHolderData(  @QueryValue String createdBy,
+//            @Part("file") CompletedFileUpload file)
+//			throws ShareHolderDataFormControllerException {
+//		try {
+//		
+//			String response = this.shareholderservice.uploadShareHolderDataExcelSheet(createdBy,file);
+//			return response;
+//		} catch (Exception e) {
+//			// TODO: handle exception
+//			throw new ShareHolderDataFormControllerException(ReadPropertiesFile.readResponseProperty("101"), e, 400,
+//					e.getMessage());
+//		}
+//	}
 	
+
+	 @Post(uri = "/uploadShareholderDataExcelSheet", consumes = { MediaType.APPLICATION_JSON, MediaType.MULTIPART_FORM_DATA })
+	    public String uploadExcelSheetshareHolderData(@QueryValue String createdBy, @Part("file") CompletedFileUpload file) throws ShareHolderDataFormControllerException {
+	        CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+	            try {
+	            	System.out.println("createdBy "+createdBy);
+	                String response = this.shareholderservice.uploadShareHolderDataExcelSheet(createdBy, file);
+	                // Optionally, process the response if needed
+	                return response;
+	            } catch (Exception e) {
+	                // Handle exceptions
+	                e.printStackTrace();
+	                throw new RuntimeException("Error processing upload", e);
+	            }
+	        }, executorService);
+
+	        future.exceptionally(ex -> {
+	            // Handle exceptions occurred in the asynchronous task
+	            ex.printStackTrace();
+	            return null;
+	        });
+
+	        // Return a CompletableFuture<String>
+	        return future.join(); // This will block until the future completes and return the response
+	    }
 	
 //	@SuppressWarnings("unchecked")
 //	@Post(uri = "/uploadShareholderDataExcelSheet", consumes = { MediaType.APPLICATION_JSON, MediaType.MULTIPART_FORM_DATA })

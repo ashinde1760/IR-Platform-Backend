@@ -37,4 +37,6 @@ public interface UserDao {
 
 	String getroleFormodifiedBy(String modifiedBy, String dataBaseName);
 
+	ArrayList<String> getAllEmailForClientAdmin(UserEntity user, String dataBaseName) throws UserModelDaoException;
+
 	}

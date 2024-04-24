@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.simple.JSONObject;
+import org.owasp.encoder.Encode;
 
 import com.Anemoi.InvestorRelation.Configuration.ReadPropertiesFile;
 
@@ -70,6 +71,9 @@ public class BalanceSheetController {
 	public List<BalanceSheetEntity> getDetails() throws BalanceSheetControllerException {
 		try {
 			List<BalanceSheetEntity> balancesheetData = this.service.getAllBalanceSheetDetails();
+			 for (BalanceSheetEntity item : balancesheetData) {
+		            item.setAlternativeName(escapeHtml(item.getAlternativeName())); // Properly escape HTML
+		        }
 			return balancesheetData;
 		} catch (Exception e) {
 			// TODO: handle exception
@@ -79,7 +83,10 @@ public class BalanceSheetController {
 		}
 
 	}
-
+	private static String escapeHtml(String input) {
+        // Using OWASP Java Encoder
+        return Encode.forHtmlContent(input);
+    }
 	@Patch("/{balanceid}")
 	public HttpResponse<BalanceSheetEntity> updaterBalanceSheet(@Body BalanceSheetEntity balancesheetEntity,
 			@PathVariable("balanceid") String balanceid) throws BalanceSheetControllerException {

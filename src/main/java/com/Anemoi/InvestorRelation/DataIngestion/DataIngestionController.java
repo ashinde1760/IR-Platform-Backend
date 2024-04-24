@@ -16,6 +16,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.json.simple.JSONObject;
@@ -53,11 +55,18 @@ import org.reactivestreams.Subscription;
 public class DataIngestionController {
 
 	public static final String CONTENT_DISPOSITION_VALUE = "attachment;filename=";
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10); // Adjust the number of threads as needed
+
 	@Inject
 	DataIngestionService dataingestionService;
 
 //	private boolean status = false;
-
+	
+	public DataIngestionController(DataIngestionService dataingestionService) {
+		super();
+		this.dataingestionService = dataingestionService;
+	}
+	
 	@Post(value = "/addMultipleFiles", consumes = MediaType.MULTIPART_FORM_DATA)
 	public CompletableFuture<List<NonProcessFilesDetails>> MultipleFiles(
 			@Body NonProcessFilesDetails details, Publisher<CompletedFileUpload> data)
@@ -148,6 +157,8 @@ public class DataIngestionController {
 		return future;
 	}
 
+	
+
 	// **
 	@Get("/getnpFileidsByClientName/{client}")
 	public ArrayList<NonProcessFilesDetails> getFileIdsByClient(@PathVariable("client") String client)
@@ -189,19 +200,33 @@ public class DataIngestionController {
 	@Post("/savePreviewFileDetails/{npFileId}")
 	public HttpResponse<DataIngestionModel> savePreviewFileDetails(@PathVariable("npFileId") int npFileId,
 			@Body DataIngestionModel ingestionModel) throws DataIngestionControllerException {
+		 CompletableFuture<HttpResponse<DataIngestionModel>> future = CompletableFuture.supplyAsync(() -> {
 		try {
 			HttpResponse<DataIngestionModel> modelResponse = this.dataingestionService
 					.savePreviewFileDetailsInTable(npFileId, ingestionModel);
 			return modelResponse;
-		} catch (Exception e) {
+		 } catch (Exception e) {
+             // Handle exceptions
+//			 throw new DataIngestionControllerException(ReadPropertiesFile.readResponseProperty("101"), e, 400,
+//						e.getMessage());
+			 e.printStackTrace();
+             throw new RuntimeException("Error processing upload", e);
+         }
+     }, executorService);
 
-			throw new DataIngestionControllerException(ReadPropertiesFile.readResponseProperty("101"), e, 400,
-					e.getMessage());
-		}
+     future.exceptionally(ex -> {
+         // Handle exceptions occurred in the asynchronous task
+         ex.printStackTrace();
+         return null;
+     });
+
+     // Return a CompletableFuture<String>
+     return future.join();
 	}
 
 	@Get("/getdataingestionFileData")
 	public ArrayList<DataIngestionModel> getDataIngestionFileDetails() throws DataIngestionControllerException {
+		System.out.println("check1");
 		try {
 			ArrayList<DataIngestionModel> list = this.dataingestionService.getfileDetails();
 			return list;

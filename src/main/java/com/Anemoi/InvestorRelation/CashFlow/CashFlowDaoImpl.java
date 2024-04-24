@@ -174,8 +174,8 @@ public class CashFlowDaoImpl implements CashFlowDao {
 		Connection connection = null;
 		PreparedStatement pstmt = null;
 		List<String> existingValues = new ArrayList<>();
-		LOGGER.info(".in update cash flow database name is ::" + dataBaseName + " cashId is ::" + cashid
-				+ " request cash flow is ::" + cashFlowEntity);
+//		LOGGER.info(".in update cash flow database name is ::" + dataBaseName + " cashId is ::" + cashid
+//				+ " request cash flow is ::" + cashFlowEntity);
 
 		try {
 
@@ -477,6 +477,10 @@ public class CashFlowDaoImpl implements CashFlowDao {
 			// TODO: handle exception
 			e.printStackTrace();
 		}
+		 finally {
+
+				InvestorDatabaseUtill.close(psta, con);
+			}
 		return null;
 	}
 

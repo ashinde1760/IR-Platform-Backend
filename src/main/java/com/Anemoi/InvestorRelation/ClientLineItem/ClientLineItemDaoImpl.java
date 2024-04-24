@@ -28,6 +28,7 @@ import com.Anemoi.InvestorRelation.AnalystLineItem.AnalystLineItemQueryConstant;
 import com.Anemoi.InvestorRelation.AnalystLineItem.AnalystLineItemServiceException;
 import com.Anemoi.InvestorRelation.CashFlow.CashFlowDaoException;
 import com.Anemoi.InvestorRelation.Configuration.InvestorDatabaseUtill;
+import com.Anemoi.InvestorRelation.DataIngestion.DataIngestionDaoException;
 
 import io.micronaut.http.multipart.CompletedFileUpload;
 import jakarta.inject.Singleton;
@@ -322,7 +323,7 @@ public class ClientLineItemDaoImpl implements ClientLineItemDao {
 		boolean allExistInDatabase = true;
 		ArrayList<ClientLineItemEntity> alreadyPresentList=new ArrayList<>();
 		try {
-
+			connection = InvestorDatabaseUtill.getConnection();
 			byte[] fileContent = file.getBytes();
 
 			InputStream targetStream = new ByteArrayInputStream(fileContent);
@@ -353,7 +354,7 @@ public class ClientLineItemDaoImpl implements ClientLineItemDao {
 					throw new ClientLineItemDaoException("values Should not be empty or null ");
 
 				}
-				connection = InvestorDatabaseUtill.getConnection();
+				
 
 				pstmt = connection.prepareStatement(ClientLineItemQueryConstant.SELECT_CLIENTNAME
 						.replace(ClientLineItemQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
@@ -406,7 +407,7 @@ public class ClientLineItemDaoImpl implements ClientLineItemDao {
 				}
 				Date d = new Date();
 
-				connection = InvestorDatabaseUtill.getConnection();
+				
 
 				pstmt = connection.prepareStatement(ClientLineItemQueryConstant.SELECT_CLIENTTLINETEMNAME
 						.replace(ClientLineItemQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
@@ -563,6 +564,9 @@ public class ClientLineItemDaoImpl implements ClientLineItemDao {
 		catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
+		} finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return null;
 	}
@@ -597,6 +601,9 @@ public class ClientLineItemDaoImpl implements ClientLineItemDao {
 		catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
+		} finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return null;
 	}
@@ -632,6 +639,10 @@ public class ClientLineItemDaoImpl implements ClientLineItemDao {
 			// TODO: handle exception
 			e.printStackTrace();
 		}
+		 finally {
+
+				InvestorDatabaseUtill.close(psta, con);
+			}
 		return null;
 	}
 	}

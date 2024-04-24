@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.owasp.encoder.Encode;
 
 import com.Anemoi.InvestorRelation.Configuration.ReadPropertiesFile;
 
@@ -69,6 +70,9 @@ public class ShareHolderContactController {
 	public List<ShareHolderContactEntity> getDetails() throws SQLException, ShareHolderContactControllerException {
 		try {
 			List<ShareHolderContactEntity> shareholdercontact = this.service.getAllShareholderContactDetails();
+			 for (ShareHolderContactEntity item : shareholdercontact) {
+		            item.setName(escapeHtml(item.getName())); // Properly escape HTML
+		        }
 			return shareholdercontact;
 		} catch (Exception e) {
 			// TODO: handle exception
@@ -78,7 +82,10 @@ public class ShareHolderContactController {
 		}
 
 	}
-
+	 private static String escapeHtml(String input) {
+	        // Using OWASP Java Encoder
+	        return Encode.forHtmlContent(input);
+	    }
 	@Patch("/{contactid}")
 	public HttpResponse<ShareHolderContactEntity> updateShareholderContact(
 			@Body ShareHolderContactEntity shareholdercontactEntity, @PathVariable("contactid") String contactid)

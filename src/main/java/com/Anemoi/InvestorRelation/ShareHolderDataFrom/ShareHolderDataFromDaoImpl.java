@@ -193,8 +193,8 @@ public class ShareHolderDataFromDaoImpl implements ShareHoderDataFromDao {
 			String shareid, String dataBaseName) {
 		Connection connection = null;
 		PreparedStatement pstmt = null;
-		LOGGER.info(".in update shareholder dataform database name is ::" + dataBaseName + " cashId is ::" + shareid
-				+ " request cash flow is ::" + shareholderdataform);
+//		LOGGER.info(".in update shareholder dataform database name is ::" + dataBaseName + " cashId is ::" + shareid
+//				+ " request cash flow is ::" + shareholderdataform);
 
 		try {
 
@@ -272,6 +272,7 @@ public class ShareHolderDataFromDaoImpl implements ShareHoderDataFromDao {
 		ResultSet rs = null;
 
 		try {
+			connection = InvestorDatabaseUtill.getConnection();
 			DataFormatter formatter = new DataFormatter();
 			byte[] fileContent = file.getBytes();
 
@@ -313,7 +314,7 @@ public class ShareHolderDataFromDaoImpl implements ShareHoderDataFromDao {
 					throw new ShareHolderDataFormDaoException("values Should not be empty or null ");
 
 				}
-				connection = InvestorDatabaseUtill.getConnection();
+				
 
 				statement = connection.prepareStatement(ShareHolderDataFromQuaryConstant.SELECT_CLIENTNAME
 						.replace(ShareHolderDataFromQuaryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
@@ -397,31 +398,279 @@ public class ShareHolderDataFromDaoImpl implements ShareHoderDataFromDao {
 		}
 
 	}
-
-	private Date formatRawDate(Cell dateCell) throws ShareHolderDataFormDaoException {
-		SimpleDateFormat standardFormat = new SimpleDateFormat("MM-dd-yyyy");
-		Date dateField = null;
-		if(dateCell == null)
-			{
-			System.out.print("\n Date Value is NULL ::: " );
-			throw new ShareHolderDataFormDaoException("Date value should not be null or empty");
-
-			}
-		else if (dateCell.getCellType() == CellType.STRING) {
-			dateField = formatDate(dateCell.getStringCellValue());
-			} 
-		else if (dateCell.getCellType() == CellType.NUMERIC) {
-			dateField = dateCell.getDateCellValue();
-			}
-
-		if (dateField != null)
-			System.out.print("\n Date Value read successfully ::: " 
-						+ standardFormat.format(dateField));	
 	
-		return dateField ;
 	
-	}
+	
+//	public String uploadShareHolderDataExcelSheet(String createdBy, CompletedFileUpload file, String dataBaseName)
+//	        throws ShareHolderDataFormDaoException {
+//	    Connection connection = null;
+//	    PreparedStatement statement = null;
+//	    ResultSet rs = null;
+//	    try {
+//	    	connection = InvestorDatabaseUtill.getConnection();
+//			DataFormatter formatter = new DataFormatter();
+//			byte[] fileContent = file.getBytes();
+//
+//			ByteArrayInputStream targetStream = new ByteArrayInputStream(fileContent);
+//
+//			XSSFWorkbook workbook = new XSSFWorkbook(targetStream);
+//
+//			XSSFSheet sheet = workbook.getSheetAt(0);
+//			System.out.println("check 1");
+//			int numRows = sheet.getLastRowNum() + 1;
+//			if (numRows <= 1) {
+//				throw new Exception("Excel sheet is empty");
+//			}
+//			System.out.println("check 2");
+//
+//			int rownum1 = 0;
+//
+//			for (Row row1 : sheet) {
+//
+//				if (rownum1 == 0) {
+//
+//					rownum1++;
+//					continue;
+//				}
+//				System.out.println("check 3");
+//
+//	        String clientName = (formatter.formatCellValue(row1.getCell(0)).trim());
+//			String HoldingPercentage = formatter.formatCellValue(row1.getCell(4));
+//			HoldingPercentage = HoldingPercentage.replaceAll("%", "");
+//			System.out.println("HoldingPercentage: ====>" + HoldingPercentage);
+//			double percentageValue = Double.parseDouble(HoldingPercentage);
+//			if (percentageValue == 100 || percentageValue > 100 || percentageValue < 0) {
+//				System.out.println("check 4");
+//
+//				throw new ShareHolderDataFormDaoException("% to EQT must be greater than 0 and less than 100. ");
+//
+//			} else {
+//				System.out.println("skip");
+//			}
+//			System.out.println("check 5");
+//
+//			if (clientName.isEmpty()) {
+//				System.out.println("check 6");
+//
+//				throw new ShareHolderDataFormDaoException("values Should not be empty or null ");
+//
+//			}
+//			System.out.println("check 7");
+//
+//
+//			statement = connection.prepareStatement(ShareHolderDataFromQuaryConstant.SELECT_CLIENTNAME
+//					.replace(ShareHolderDataFromQuaryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+//			rs = statement.executeQuery();
+//			List<String> analystnameList = new ArrayList<>();
+//			while (rs.next()) {
+//				System.out.println("check 8");
+//
+//				analystnameList.add(rs.getString("clientName"));
+//			}
+//			boolean isMatched = analystnameList.stream().anyMatch(clientName::equalsIgnoreCase);
+//			if (isMatched == false && !analystnameList.contains(clientName)) {
+//				System.out.println("check 9");
+//
+//				throw new ShareHolderDataFormDaoException(clientName + "," + "not present in client details table");
+//			}
+//		
+//	        int batchSize = 0;
+//	        statement = connection.prepareStatement(ShareHolderDataFromQuaryConstant.INSERT_INTO_SHAREHOLDERDATAFORM
+//	                .replace(ShareHolderDataFromQuaryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+//	        for (Row row2 : sheet) {
+//				System.out.println("check 10");
+//
+//	            if (batchSize == 0) {
+//	    			System.out.println("check 11");
+//
+//	                connection.setAutoCommit(false); // Start batch processing
+//	            }
+//	            if (batchSize == 10000) {
+//	    			System.out.println("check 12");
+//
+//	                statement.executeBatch(); // Execute batch
+//	                connection.commit(); // Commit batch
+//	                batchSize = 0;
+//	            }
+//	            if (batchSize == 0) {
+//	    			System.out.println("check 13");
+//
+//	                statement.clearBatch(); // Clear batch
+//	            }
+//	            if (batchSize == 0) { // Set parameters only for the first statement in batch
+//	    			System.out.println("check 14");
+//
+//	                 clientName = formatter.formatCellValue(row2.getCell(0));
+//	                String Folio = formatter.formatCellValue(row2.getCell(1));
+//	                String ShareholderName = formatter.formatCellValue(row2.getCell(2));
+//	                String HoldingValue = formatter.formatCellValue(row2.getCell(3));
+//	                 HoldingPercentage = formatter.formatCellValue(row2.getCell(4));
+//	                String holdingCost = "1"; // Assuming this is constant for each row
+//	                String MinorCode = formatter.formatCellValue(row2.getCell(5));
+//	                String fundgroup = formatter.formatCellValue(row2.getCell(6));
+//	                Cell dateCell = row2.getCell(7);
+//	                Date inputDate = formatRawDate(dateCell);
+//	                applyValidation(clientName, Folio, ShareholderName, HoldingValue, HoldingPercentage, MinorCode,
+//	                        fundgroup);
+//	                String regex = "^[1-9]\\d*$";
+//	                if (!HoldingValue.replaceAll(",", "").matches(regex)) {
+//	        			System.out.println("check 15");
+//
+//	                    throw new ShareHolderDataFormDaoException(
+//	                            "Number of share should not be accept zero,alphabhet and decimal values");
+//	                }
+//	                long unixTimestampMillis = inputDate.getTime();
+//	                Date d = new Date();
+//	                statement.setString(1, UUID.randomUUID().toString());
+//	                statement.setString(2, clientName);
+//	                statement.setString(3, Folio);
+//	                statement.setString(4, ShareholderName);
+//	                statement.setString(5, HoldingValue);
+//	                statement.setString(6, HoldingPercentage);
+//	                statement.setString(7, holdingCost);
+//	                statement.setString(8, MinorCode);
+//	                statement.setString(9, fundgroup);
+//	                statement.setLong(10, unixTimestampMillis);
+//	                statement.setString(11, createdBy);
+//	                statement.setLong(12, d.getTime());
+//	                statement.setString(13, null);
+//	                statement.setLong(14, d.getTime());
+//	                statement.addBatch(); // Add statement to batch
+//	                batchSize++;
+//	            }
+//	        
+//	        }
+//	        if (batchSize > 0) { // Execute remaining statements in batch
+//				System.out.println("check 16");
+//
+//	            statement.executeBatch();
+//	            connection.commit();
+//	        }
+//			}
+//			System.out.println("check 17");
+//
+//	        JSONObject responseJSON = new JSONObject();
+//	        responseJSON.put(STATUS, SUCCESS);
+//	        responseJSON.put(MSG, "share holder data excel sheet uploaded successfully");
+//	        return responseJSON.toString();
+//	    } catch (Exception e) {
+//	        throw new ShareHolderDataFormDaoException(e.getMessage());
+//	    } finally {
+//	        LOGGER.debug("closing the connections");
+//	        InvestorDatabaseUtill.close(statement, connection);
+//	    }
+//	}
+	
+	
 
+//	private Date formatRawDate(Cell dateCell) throws ShareHolderDataFormDaoException {
+//		SimpleDateFormat standardFormat = new SimpleDateFormat("MM-dd-yyyy");
+//		Date dateField = null;
+//		if(dateCell == null)
+//			{
+//			System.out.print("\n Date Value is NULL ::: " );
+//			throw new ShareHolderDataFormDaoException("Date value should not be null or empty");
+//
+//			}
+//		else if (dateCell.getCellType() == CellType.STRING) {
+//			dateField = formatDate(dateCell.getStringCellValue());
+//			} 
+//		else if (dateCell.getCellType() == CellType.NUMERIC) {
+//			dateField = dateCell.getDateCellValue();
+//			}
+//
+//		if (dateField != null)
+//			System.out.print("\n Date Value read successfully ::: " 
+//						+ standardFormat.format(dateField));	
+//	
+//		return dateField ;
+//	
+//	}
+
+//	public String uploadShareHolderDataExcelSheet(String createdBy, CompletedFileUpload file, String dataBaseName)
+//	        throws ShareHolderDataFormDaoException {
+//		
+//	    try (Connection connection = InvestorDatabaseUtill.getConnection();
+//	         PreparedStatement selectStatement = connection.prepareStatement(ShareHolderDataFromQuaryConstant.SELECT_CLIENTNAME
+//	                 .replace(ShareHolderDataFromQuaryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
+//	         PreparedStatement insertStatement = connection.prepareStatement(ShareHolderDataFromQuaryConstant.INSERT_INTO_SHAREHOLDERDATAFORM
+//	                 .replace(ShareHolderDataFromQuaryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName))) {
+//
+//	        DataFormatter formatter = new DataFormatter();
+//	        byte[] fileContent = file.getBytes();
+//	        ByteArrayInputStream targetStream = new ByteArrayInputStream(fileContent);
+//	        XSSFWorkbook workbook = new XSSFWorkbook(targetStream);
+//	        XSSFSheet sheet = workbook.getSheetAt(0);
+//
+//	        List<String> analystnameList = new ArrayList<>();
+//
+//	        int rownum = 0;
+//	        for (Row row : sheet) {
+//	            if (rownum == 0) {
+//	                rownum++;
+//	                continue;
+//	            }
+//
+//	            String clientName = formatter.formatCellValue(row.getCell(0));
+//	            String HoldingPercentage = formatter.formatCellValue(row.getCell(4)).replaceAll("%", "");
+//	            double percentageValue = Double.parseDouble(HoldingPercentage);
+//	            if (percentageValue == 100 || percentageValue > 100 || percentageValue < 0) {
+//	                throw new ShareHolderDataFormDaoException("% to EQT must be greater than 0 and less than 100.");
+//	            }
+//
+//	            if (clientName.isEmpty()) {
+//	                throw new ShareHolderDataFormDaoException("Values should not be empty or null.");
+//	            }
+//
+//	            analystnameList.clear();
+//	            selectStatement.clearParameters();
+//	            ResultSet rs = selectStatement.executeQuery();
+//	            while (rs.next()) {
+//	                analystnameList.add(rs.getString("clientName"));
+//	            }
+//	            rs.close();
+//
+//	            if (!analystnameList.stream().anyMatch(clientName::equalsIgnoreCase)) {
+//	                throw new ShareHolderDataFormDaoException(clientName + " not present in client details table.");
+//	            }
+//
+//	            // Set parameters for insert statement
+//	            insertStatement.setString(1, UUID.randomUUID().toString());
+//	            insertStatement.setString(2, clientName);
+//	            insertStatement.setString(3, formatter.formatCellValue(row.getCell(1)));
+//	            insertStatement.setString(4, formatter.formatCellValue(row.getCell(2)));
+//	            insertStatement.setString(5, formatter.formatCellValue(row.getCell(3)));
+//	            insertStatement.setString(6, HoldingPercentage);
+//	            insertStatement.setString(7, "1");
+//	            insertStatement.setString(8, formatter.formatCellValue(row.getCell(5)));
+//	            insertStatement.setString(9, formatter.formatCellValue(row.getCell(6)));
+//	            insertStatement.setLong(10, formatRawDate(row.getCell(7)).getTime());
+//	            insertStatement.setString(11, createdBy);
+//	            long currentTimeMillis = System.currentTimeMillis();
+//	            insertStatement.setLong(12, currentTimeMillis);
+//	            insertStatement.setString(13, null);
+//	            insertStatement.setLong(14, currentTimeMillis);
+//
+//	            // Add batch
+//	            insertStatement.addBatch();
+//
+//	            rownum++;
+//	        }
+//
+//	        // Execute batch
+//	        insertStatement.executeBatch();
+//
+//	        JSONObject responseJSON = new JSONObject();
+//	        responseJSON.put(STATUS, SUCCESS);
+//	        responseJSON.put(MSG, "Shareholder data Excel sheet uploaded successfully.");
+//	        return responseJSON.toString();
+//
+//	    } catch (Exception e) {
+//	        throw new ShareHolderDataFormDaoException(e.getMessage());
+//	    }
+//	}
+
+	
 	private Date formatDate(String value) throws ShareHolderDataFormDaoException {
 		String[] dateFormats = {"dd/MM/yyyy","MM/dd/yyyy","dd.MM.yyyy","MM.dd.yyyy","dd-MM-yyyy","MM-dd-yyyy"};
 		Date myDate;
@@ -439,7 +688,36 @@ public class ShareHolderDataFromDaoImpl implements ShareHoderDataFromDao {
 		System.out.print("\nNo formats matched ::: :" + value);
 		return null;
 	}
-	
+	private Date formatRawDate(Cell dateCell) throws ShareHolderDataFormDaoException {
+	    if (dateCell == null) {
+	        return null;
+	    }
+	    
+	    if (dateCell.getCellType() == CellType.NUMERIC) {
+	    	System.out.println("check 18");
+	        return dateCell.getDateCellValue();
+	    } else if (dateCell.getCellType() == CellType.STRING) {
+	    	System.out.println("check 19");
+	        String value = dateCell.getStringCellValue();
+	        String[] dateFormats = {"dd/MM/yyyy","MM/dd/yyyy","dd.MM.yyyy","MM.dd.yyyy","dd-MM-yyyy","MM-dd-yyyy"};
+	        for (String format : dateFormats) {
+	        	System.out.println("check 20");
+	            SimpleDateFormat sdf = new SimpleDateFormat(format);
+	            try {
+	                return sdf.parse(value);
+	            } catch (ParseException e) {
+	                // Continue to try other formats
+	            }
+	        }
+	        System.out.println("check 21");
+	        throw new ShareHolderDataFormDaoException("Date parsing failed for value: " + value);
+	    } else {
+	    	System.out.println("check 22");
+	        // Handle other cell types if necessary
+	        return null;
+	    }
+	}
+
 	
 	private void applyValidation(String clientName, String folio, String shareholderName, String holdingValue,
 			String holdingPercentage, String minorCode,  String fundgroup) throws Exception {
@@ -545,6 +823,9 @@ public class ShareHolderDataFromDaoImpl implements ShareHoderDataFromDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return null;
 	}
@@ -570,6 +851,9 @@ public class ShareHolderDataFromDaoImpl implements ShareHoderDataFromDao {
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return null;
 	}

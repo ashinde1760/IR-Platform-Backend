@@ -172,8 +172,8 @@ public class IncomeStatementDaoImpl implements IncomeStatementDao {
 		Connection connection = null;
 		PreparedStatement pstmt = null;
 		List<String> existingValues = new ArrayList<>();
-		LOGGER.info(".in update incomestatement database name is ::" + dataBaseName + " incomeId is ::" + incomeid
-				+ " request role model is ::" + incomestatement);
+//		LOGGER.info(".in update incomestatement database name is ::" + dataBaseName + " incomeId is ::" + incomeid
+//				+ " request role model is ::" + incomestatement);
 
 		try {
 
@@ -460,6 +460,9 @@ public class IncomeStatementDaoImpl implements IncomeStatementDao {
 		catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
+		}finally {
+
+			InvestorDatabaseUtill.close(psta, con);
 		}
 		return null;
 	}

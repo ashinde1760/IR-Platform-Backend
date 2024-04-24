@@ -245,10 +245,11 @@ public class AnalystLineItemDaoImpl implements AnalystLineItemDao {
 		PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		String lineItemName;
-		List<String> analystlineItemList = new ArrayList<>();
+		
     ArrayList<AnalystLineItemEntity> alreadypresentList=new ArrayList<>();
 		boolean allExistInDatabase = true;
 		try {
+			connection = InvestorDatabaseUtill.getConnection();
 			byte[] fileContent = file.getBytes();
 
 			InputStream targetStream = new ByteArrayInputStream(fileContent);
@@ -281,7 +282,7 @@ public class AnalystLineItemDaoImpl implements AnalystLineItemDao {
 
 				}
 			
-				connection = InvestorDatabaseUtill.getConnection();
+				
 
 				pstmt = connection.prepareStatement(AnalystLineItemQueryConstant.SELECT_ANALYSTNAME
 						.replace(AnalystLineItemQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
@@ -300,6 +301,7 @@ public class AnalystLineItemDaoImpl implements AnalystLineItemDao {
 			int rownum = 0;
 
 			for (Row row1 : sheet) {
+				List<String> analystlineItemList = new ArrayList<>();
 
 				if (rownum == 0) {
 
@@ -335,8 +337,6 @@ public class AnalystLineItemDaoImpl implements AnalystLineItemDao {
 					lineItemName = null;
 				}
 				Date d = new Date();
-
-//				connection = InvestorDatabaseUtill.getConnection();
 
 				pstmt = connection.prepareStatement(AnalystLineItemQueryConstant.SELECT_ANALYSTLINETEMNAME
 						.replace(AnalystLineItemQueryConstant.DATA_BASE_PLACE_HOLDER, dataBaseName));
@@ -603,6 +603,10 @@ public class AnalystLineItemDaoImpl implements AnalystLineItemDao {
 			// TODO: handle exception
 			e.printStackTrace();
 		}
+		 finally {
+
+				InvestorDatabaseUtill.close(psta, con);
+			}
 		return null;
 	}
 
@@ -636,6 +640,10 @@ public class AnalystLineItemDaoImpl implements AnalystLineItemDao {
 			// TODO: handle exception
 			e.printStackTrace();
 		}
+		 finally {
+
+				InvestorDatabaseUtill.close(psta, con);
+			}
 return null;
 	}
 	
