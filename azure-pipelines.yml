@@ -3,11 +3,11 @@ parameters:
   - name: ENVVG
     displayName: Select Environment To Deploy
     type: string
-    default: DEV
+    default: UAT
     values:
     - DEV
-    #- UAT
-    #- PROD
+    - UAT
+    - PROD
 
   - name: blackduck
     displayName: Do you want to scan for BlackDuck?(Click on it)
@@ -15,11 +15,12 @@ parameters:
     default: false
 
 trigger: none
-# - dev
+# - main
 
 variables:
 - name: build_agent_pool
   value: windows-latest
+
 - name: build_content_path
   value: "$(Build.SourcesDirectory)/target/Investor_Relation-0.1.jar"
 - name: env
@@ -30,6 +31,22 @@ variables:
   ${{ if eq(parameters.ENVVG, 'PROD') }}:
     value: prod
 
+- name: deployment_environment
+  ${{ if eq(parameters.ENVVG, 'DEV') }}:
+    value: IR_project_vm
+  ${{ if eq(parameters.ENVVG, 'UAT') }}:
+    value:  IR_project_vm
+  ${{ if eq(parameters.ENVVG, 'PROD') }}:
+    value: IR_PROD
+
+- name: jar_path
+  ${{ if eq(parameters.ENVVG, 'DEV') }}:
+    value: 'C:\CICD\devBackend'
+  ${{ if eq(parameters.ENVVG, 'UAT') }}:
+    value: 'C:\Backend'
+  ${{ if eq(parameters.ENVVG, 'PROD') }}:
+    value: 'F:\Backend'
+
 - name: DB_HOST
   value: $(${{ parameters.ENVVG }}_DB_HOST)
 - name: DB_USERNAME
@@ -38,10 +55,10 @@ variables:
   value: $(${{ parameters.ENVVG }}_DB_PASSWORD)
 - name: DB_NAME
   value: $(${{ parameters.ENVVG }}_DB_NAME)
-# - name: FORMRECOGNIZER_KEY 
-#   value: $(${{ parameters.ENVVG }}_FORMRECOGNIZER_KEY) 
-# - name: FORMRECOGNIZER_ENDPOINT 
-#   value: $(${{ parameters.ENVVG }}_FORMRECOGNIZER_ENDPOINT)
+- name: FORMRECOGNIZER_KEY 
+  value: $(${{ parameters.ENVVG }}_FORMRECOGNIZER_KEY) 
+- name: FORMRECOGNIZER_ENDPOINT 
+  value: $(${{ parameters.ENVVG }}_FORMRECOGNIZER_ENDPOINT)
 
 - group: investor_relations
 
@@ -58,18 +75,19 @@ stages:
           clean: all
         steps:
           - checkout: self
-
           # Replace Variables & Tokens
-          - task: qetza.replacetokens.replacetokens-task.replacetokens@3
-            displayName: 'Replace Tokens in Manifests'
+          # - task: replacetokens@6
+          #   inputs:
+          #     root: '$(Build.SourcesDirectory)/src/main/resources/'
+          #     sources: '*.properties'
+          #     tokenPattern: 'doubleunderscores'
+          - task: replacetokens@6
             inputs:
-              rootDirectory: '$(Build.SourcesDirectory)/src/main/resources/'
-              targetFiles: 'db.properties, database.properties,ocrKey.properties'
-              escapeType: none
-              verbosity: detailed
+              root: '$(Build.SourcesDirectory)/src/main/resources/'
+              sources: '*.properties'
+
           - script: mvn clean install -DskipTests
             displayName: 'building java app'
-
           - task: PublishPipelineArtifact@1
             inputs:
               targetPath: $(build_content_path)
@@ -86,7 +104,7 @@ stages:
       workspace:
         clean: all
       environment: 
-        name: IR_project_vm
+        name: $(deployment_environment)
         resourceType: VirtualMachine
       strategy:
         runOnce:
@@ -98,26 +116,16 @@ stages:
                   path: $(System.DefaultWorkingDirectory)/build_be_$(env)      
               
               - powershell: |
-                  Remove-Item -path 'C:\CICD\devBackend\*' -Recurse -Force -EA SilentlyContinue -Verbose;
-                  Copy-Item '$(System.DefaultWorkingDirectory)/build_be_$(env)/*' 'C:\CICD\devBackend' -Recurse
-
-                  # Write-Host "Starting App"
-                  # powershell.exe C:\Users\GLBL_RDP_USER_01\Documents\start-backend.ps1
+                  Remove-Item -path '$(jar_path)\*.jar' -Recurse -Force -EA SilentlyContinue -Verbose;
+                  Copy-Item '$(System.DefaultWorkingDirectory)/build_be_$(env)/*' '$(jar_path)' -Recurse;
                 displayName: 'Execute Deploy Script'
-              
               # - powershell: |
-                  # Write-Host "Remove Old Jar"
-                  # Remove-Item -path 'C:\Backend\*' -Recurse -Force -EA SilentlyContinue -Verbose;
-                  
-                  # Write-Host "Copy New Latest Jar"
-                  # Copy-Item '$(System.DefaultWorkingDirectory)/_INV_RELATIONS_PLATFORM_BACKEND/build_be_uat/*' 'C:\Backend' -Recurse
-                  
-                  # Write-Host "Stop App"
-                  # Stop-Process -Name "java" -ErrorAction SilentlyContinue
+              #     cd $(jar_path);
+              #     pwd;
+              #     Start-Process -FilePath "C:\java\bin\java.exe" -ArgumentList "-jar ","F:\Backend\Investor_Relation-0.1.jar" -WindowStyle Hidden
+              #   displayName: 'Execute Deploy Script'  
+              
 
-                  # Write-Host "Start App"
-                  # Start-Process -FilePath "java.exe" "-jar", "C:\Backend\Investor_Relation-0.1.jar"
-                # displayName: 'Execute Deploy Script'
 
 - ${{ if eq(parameters.blackduck, true) }}:
   - stage: BlackDuck

@@ -419,7 +419,7 @@ public class InvestorDatabase extends InvestorDatabaseTables {
 		System.out.println(statement.toString());
 		
 
-//		String query = "CREATE TABLE InvestorDB.dev.user1(id uniqueidentifier NOT NULL,firstName varchar(255) NOT NULL,lastName varchar(255) NOT NULL,email varchar(255) NOT NULL,mobileNumber varchar(255) NOT NULL,domain varchar(255) NOT NULL,assignedName varchar(255) NOT NULL,role varchar(255) NOT NULL,status varchar(255) NOT NULL,createdOn bigint NOT NULL,CONSTRAINT PK_id PRIMARY KEY CLUSTERED(id))";
+//		String query = "CREATE TABLE InvestorDB.dbo.user1(id uniqueidentifier NOT NULL,firstName varchar(255) NOT NULL,lastName varchar(255) NOT NULL,email varchar(255) NOT NULL,mobileNumber varchar(255) NOT NULL,domain varchar(255) NOT NULL,assignedName varchar(255) NOT NULL,role varchar(255) NOT NULL,status varchar(255) NOT NULL,createdOn bigint NOT NULL,CONSTRAINT PK_id PRIMARY KEY CLUSTERED(id))";
 //		statement.executeUpdate(query);
 
 		statement.executeUpdate(CREATE_USER_TABLE.replace(DATA_BASE_PLACE_HOLDER, dataBaseName));
@@ -460,7 +460,7 @@ public class InvestorDatabase extends InvestorDatabaseTables {
 
 	private static void createRoleModelTable(Statement statement, String dataBaseName) throws SQLException {
 		// TODO Auto-generated method stub
-		System.out.println("welcome tables");
+		System.out.println("welcome tables: "+ dataBaseName);
 		statement.executeUpdate(CREATE_ROLEMODEL_TABLE.replace(DATA_BASE_PLACE_HOLDER, dataBaseName));
 		logger.info("roleModel table create successfully");
 	}

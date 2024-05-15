@@ -1492,6 +1492,7 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 				{
 					psta.setString(23,dataIngestionMapping.getReportType().trim()+"FY"+dataIngestionMapping.getReportYear().substring(2, 4));
 				}
+				
 				psta.executeUpdate();
 
 			}
@@ -3176,9 +3177,6 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 				psta.setString(18, model.getCreatedBy());
 				psta.setLong(19, model.getCreatedOn());
 				psta.setString(20, model.getReportYear());
-				
-
-				
 				if(model.getReportType().trim().equals("Annual"))
 				{
 					psta.setString(21,"FY"+model.getReportYear().substring(2, 4));
@@ -3186,10 +3184,11 @@ public class DataIngestionDaoImpl implements DataIngestionDao {
 				{
 					psta.setString(21,model.getReportType().trim()+"FY"+model.getReportYear().substring(2, 4));
 				}
+				
 				psta.executeUpdate();
 				LOGGER.info("data add in data ingestion file table");
 				LOGGER.info("extract the file");
-				
+
 				try {
 					this.extractFileByFileId(model.getFileId(), dataBaseName); // call extract method
 				} catch (Exception e) {
