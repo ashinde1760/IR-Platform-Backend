@@ -460,7 +460,7 @@ public class InvestorDatabase extends InvestorDatabaseTables {
 
 	private static void createRoleModelTable(Statement statement, String dataBaseName) throws SQLException {
 		// TODO Auto-generated method stub
-		System.out.println("welcome tables: "+ dataBaseName);
+		System.out.println("welcome tables");
 		statement.executeUpdate(CREATE_ROLEMODEL_TABLE.replace(DATA_BASE_PLACE_HOLDER, dataBaseName));
 		logger.info("roleModel table create successfully");
 	}
